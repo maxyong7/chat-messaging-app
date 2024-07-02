@@ -6,9 +6,9 @@ import (
 
 	"github.com/streadway/amqp"
 
-	"github.com/evrone/go-clean-template/internal/entity"
-	"github.com/evrone/go-clean-template/internal/usecase"
-	"github.com/evrone/go-clean-template/pkg/rabbitmq/rmq_rpc/server"
+	"github.com/maxyong7/chat-messaging-app/internal/entity"
+	"github.com/maxyong7/chat-messaging-app/internal/usecase"
+	"github.com/maxyong7/chat-messaging-app/pkg/rabbitmq/rmq_rpc/server"
 )
 
 type translationRoutes struct {

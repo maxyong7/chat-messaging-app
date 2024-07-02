@@ -9,16 +9,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/evrone/go-clean-template/config"
-	amqprpc "github.com/evrone/go-clean-template/internal/controller/amqp_rpc"
-	v1 "github.com/evrone/go-clean-template/internal/controller/http/v1"
-	"github.com/evrone/go-clean-template/internal/usecase"
-	"github.com/evrone/go-clean-template/internal/usecase/repo"
-	"github.com/evrone/go-clean-template/internal/usecase/webapi"
-	"github.com/evrone/go-clean-template/pkg/httpserver"
-	"github.com/evrone/go-clean-template/pkg/logger"
-	"github.com/evrone/go-clean-template/pkg/postgres"
-	"github.com/evrone/go-clean-template/pkg/rabbitmq/rmq_rpc/server"
+	"github.com/maxyong7/chat-messaging-app/config"
+	amqprpc "github.com/maxyong7/chat-messaging-app/internal/controller/amqp_rpc"
+	v1 "github.com/maxyong7/chat-messaging-app/internal/controller/http/v1"
+	"github.com/maxyong7/chat-messaging-app/internal/usecase"
+	"github.com/maxyong7/chat-messaging-app/internal/usecase/repo"
+	"github.com/maxyong7/chat-messaging-app/internal/usecase/webapi"
+	"github.com/maxyong7/chat-messaging-app/pkg/httpserver"
+	"github.com/maxyong7/chat-messaging-app/pkg/logger"
+	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
+	"github.com/maxyong7/chat-messaging-app/pkg/rabbitmq/rmq_rpc/server"
 )
 
 // Run creates objects via constructors.

@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/evrone/go-clean-template/config"
-	"github.com/evrone/go-clean-template/internal/app"
+	"github.com/maxyong7/chat-messaging-app/config"
+	"github.com/maxyong7/chat-messaging-app/internal/app"
 )
 
 func main() {

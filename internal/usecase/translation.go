@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/evrone/go-clean-template/internal/entity"
+	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
 // TranslationUseCase -.
