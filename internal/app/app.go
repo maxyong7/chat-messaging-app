@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/maxyong7/chat-messaging-app/config"
-	amqprpc "github.com/maxyong7/chat-messaging-app/internal/controller/amqp_rpc"
 	v1 "github.com/maxyong7/chat-messaging-app/internal/controller/http/v1"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase/repo"
@@ -18,7 +17,6 @@ import (
 	"github.com/maxyong7/chat-messaging-app/pkg/httpserver"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
-	"github.com/maxyong7/chat-messaging-app/pkg/rabbitmq/rmq_rpc/server"
 )
 
 // Run creates objects via constructors.
@@ -37,18 +35,22 @@ func Run(cfg *config.Config) {
 		repo.New(pg),
 		webapi.New(),
 	)
+	verificationUseCase := usecase.NewAuth(
+		repo.NewVerification(pg),
+		webapi.New(),
+	)
 
-	// RabbitMQ RPC Server
-	rmqRouter := amqprpc.NewRouter(translationUseCase)
+	// // RabbitMQ RPC Server
+	// rmqRouter := amqprpc.NewRouter(translationUseCase)
 
-	rmqServer, err := server.New(cfg.RMQ.URL, cfg.RMQ.ServerExchange, rmqRouter, l)
-	if err != nil {
-		l.Fatal(fmt.Errorf("app - Run - rmqServer - server.New: %w", err))
-	}
+	// rmqServer, err := server.New(cfg.RMQ.URL, cfg.RMQ.ServerExchange, rmqRouter, l)
+	// if err != nil {
+	// 	l.Fatal(fmt.Errorf("app - Run - rmqServer - server.New: %w", err))
+	// }
 
 	// HTTP Server
 	handler := gin.New()
-	v1.NewRouter(handler, l, translationUseCase)
+	v1.NewRouter(handler, l, translationUseCase, verificationUseCase)
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
 
 	// Waiting signal
@@ -60,8 +62,8 @@ func Run(cfg *config.Config) {
 		l.Info("app - Run - signal: " + s.String())
 	case err = <-httpServer.Notify():
 		l.Error(fmt.Errorf("app - Run - httpServer.Notify: %w", err))
-	case err = <-rmqServer.Notify():
-		l.Error(fmt.Errorf("app - Run - rmqServer.Notify: %w", err))
+		// case err = <-rmqServer.Notify():
+		// 	l.Error(fmt.Errorf("app - Run - rmqServer.Notify: %w", err))
 	}
 
 	// Shutdown
@@ -70,8 +72,8 @@ func Run(cfg *config.Config) {
 		l.Error(fmt.Errorf("app - Run - httpServer.Shutdown: %w", err))
 	}
 
-	err = rmqServer.Shutdown()
-	if err != nil {
-		l.Error(fmt.Errorf("app - Run - rmqServer.Shutdown: %w", err))
-	}
+	// err = rmqServer.Shutdown()
+	// if err != nil {
+	// 	l.Error(fmt.Errorf("app - Run - rmqServer.Shutdown: %w", err))
+	// }
 }

@@ -26,4 +26,14 @@ type (
 	TranslationWebAPI interface {
 		Translate(entity.Translation) (entity.Translation, error)
 	}
+
+	// Verification -.
+	Verification interface {
+		VerifyCredentials(context.Context, entity.Verification) (bool, error)
+	}
+
+	// VerificationRepo -.
+	VerificationRepo interface {
+		GetUserInfo(context.Context, entity.Verification) (*entity.UserInfoDTO, error)
+	}
 )
