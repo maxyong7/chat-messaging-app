@@ -1,6 +1,6 @@
 module github.com/maxyong7/chat-messaging-app
 
-go 1.22.4
+go 1.22.5
 
 require (
 	github.com/Conight/go-googletrans v0.0.0-20200929083318-176776d061cb
