@@ -4,6 +4,7 @@
 
 # Config
 .env
+.env.json
 
 # Binaries for programs and plugins
 *.exe
