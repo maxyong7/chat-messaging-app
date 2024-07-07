@@ -25,7 +25,7 @@ func newUserVerificationRoute(handler *gin.RouterGroup, t usecase.Verification, 
 }
 
 type webserverResponse struct {
-	History []entity.Translation `json:"history"`
+	IsValid bool `json:"is_valid"`
 }
 
 type verifyUserRequest struct {
@@ -53,7 +53,7 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 		return
 	}
 
-	verification, err := r.t.VerifyCredentials(
+	isValid, err := r.t.VerifyCredentials(
 		c.Request.Context(),
 		entity.Verification{
 			Username: request.Username,
@@ -62,11 +62,11 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 		},
 	)
 	if err != nil {
-		r.l.Error(err, "http - v1 - doTranslate")
+		r.l.Error(err, "http - v1 - verifyCredentials")
 		errorResponse(c, http.StatusInternalServerError, "verification service problems")
 
 		return
 	}
 
-	c.JSON(http.StatusOK, verification)
+	c.JSON(http.StatusOK, webserverResponse{IsValid: isValid})
 }

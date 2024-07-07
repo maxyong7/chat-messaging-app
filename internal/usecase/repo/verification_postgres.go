@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v4"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
 )
@@ -20,29 +22,31 @@ func NewVerification(pg *postgres.Postgres) *VerificationRepo {
 
 // GetUserInfo -.
 func (r *VerificationRepo) GetUserInfo(ctx context.Context, verification entity.Verification) (*entity.UserInfoDTO, error) {
-	sql, _, err := r.Builder.
+	sql, args, err := r.Builder.
 		Select("*").
-		From("user").
-		Where("username", verification.Username).
-		Where("email", verification.Email).
+		From("users").
+		Where(
+			squirrel.Or{
+				squirrel.Eq{"username": verification.Username},
+				squirrel.Eq{"email": verification.Email},
+			},
+		).
 		ToSql()
+
 	if err != nil {
 		return nil, fmt.Errorf("VerificationRepo - GetUserInfo - r.Builder: %w", err)
 	}
 
-	rows, err := r.Pool.Query(ctx, sql)
+	var userInfo entity.UserInfoDTO
+	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&userInfo.ID, &userInfo.Username, &userInfo.Password, &userInfo.Email)
 	if err != nil {
-		return nil, fmt.Errorf("VerificationRepo - GetUserInfo - r.Pool.Query: %w", err)
-	}
-	defer rows.Close()
-
-	entities := entity.UserInfoDTO{}
-	err = rows.Scan(&entities.Email, &entities.Username, &entities.Password)
-	if err != nil {
-		return nil, fmt.Errorf("VerificationRepo - GetUserInfo - rows.Scan: %w", err)
+		if err != pgx.ErrNoRows {
+			return &userInfo, nil
+		}
+		return nil, fmt.Errorf("VerificationRepo - GetUserInfo - r.Pool.QueryRow: %w", err)
 	}
 
-	return &entities, nil
+	return &userInfo, nil
 }
 
 // // Store -.
