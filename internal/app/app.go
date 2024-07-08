@@ -36,7 +36,7 @@ func Run(cfg *config.Config) {
 		webapi.New(),
 	)
 	verificationUseCase := usecase.NewAuth(
-		repo.NewVerification(pg),
+		repo.NewUserInfo(pg),
 		webapi.New(),
 	)
 

@@ -2,8 +2,8 @@
 // HTTP response objects if suitable. Each logic group entities in own file.
 package entity
 
-// Verification -.
-type Verification struct {
+// UserInfo -.
+type UserInfo struct {
 	Username string `json:"username"  example:"username"`
 	Password string `json:"password"  example:"password"`
 	Email    string `json:"email"  example:"email"`
