@@ -3,7 +3,9 @@ package usecase
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
@@ -35,5 +37,13 @@ type (
 	// VerificationRepo -.
 	VerificationRepo interface {
 		GetUserInfo(context.Context, entity.Verification) (*entity.UserInfoDTO, error)
+	}
+
+	Conversation interface {
+		ServeWs(*gin.Context, *Hub)
+		ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
+	}
+
+	ConversationRepo interface {
 	}
 )

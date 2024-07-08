@@ -39,6 +39,10 @@ func Run(cfg *config.Config) {
 		repo.NewVerification(pg),
 		webapi.New(),
 	)
+	conversationUseCase := usecase.NewConversation(
+		repo.NewConversation(pg),
+		webapi.New(),
+	)
 
 	// // RabbitMQ RPC Server
 	// rmqRouter := amqprpc.NewRouter(translationUseCase)
@@ -50,7 +54,13 @@ func Run(cfg *config.Config) {
 
 	// HTTP Server
 	handler := gin.New()
-	v1.NewRouter(handler, l, translationUseCase, verificationUseCase)
+	routerUseCase := v1.RouterUseCases{
+		Translation:  translationUseCase,
+		Verification: verificationUseCase,
+		Conversation: conversationUseCase,
+	}
+	v1.NewRouter(handler, l, routerUseCase)
+
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
 
 	// Waiting signal
