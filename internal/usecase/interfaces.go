@@ -29,11 +29,14 @@ type (
 
 	// Verification -.
 	Verification interface {
-		VerifyCredentials(context.Context, entity.Verification) (bool, error)
+		VerifyCredentials(context.Context, entity.UserInfo) (bool, error)
+		RegisterUser(context.Context, entity.UserInfo) error
 	}
 
-	// VerificationRepo -.
-	VerificationRepo interface {
-		GetUserInfo(context.Context, entity.Verification) (*entity.UserInfoDTO, error)
+	// UserRepo -.
+	UserRepo interface {
+		GetUserInfo(context.Context, entity.UserInfo) (*entity.UserInfoDTO, error)
+		StoreUserInfo(context.Context, entity.UserInfo) error
+		CheckUserExist(context.Context, entity.UserInfo) (bool, error)
 	}
 )
