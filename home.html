@@ -23,13 +23,22 @@ window.onload = function () {
         if (!msg.value) {
             return false;
         }
-        conn.send(msg.value);
+
+        var message = {
+            type: "message",
+            sender: "user1",  // Adjust this as needed
+            recipient: "user2",  // Adjust this as needed
+            content: msg.value,
+            id: "room1"  // Adjust this as needed
+        };
+        
+        conn.send(JSON.stringify(message));
         msg.value = "";
         return false;
     };
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws");
+        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/room1");
         conn.onerror = function (evt) {
             console.log("Error message")
             var messages = evt.data.split('\n');
@@ -45,12 +54,16 @@ window.onload = function () {
             appendLog(item);
         };
         conn.onmessage = function (evt) {
-            console.log("received message")
-            var messages = evt.data.split('\n');
-            for (var i = 0; i < messages.length; i++) {
-                var item = document.createElement("div");
-                item.innerText = messages[i];
-                appendLog(item);
+            console.log("received message");
+            try {
+                var message = JSON.parse(evt.data);
+                if (message.type === "message") {
+                    var item = document.createElement("div");
+                    item.innerText = message.sender + ": " + message.content;
+                    appendLog(item);
+                }
+            } catch (e) {
+                console.error("Error parsing JSON message:", e);
             }
         };
     } else {

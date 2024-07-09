@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -37,6 +36,30 @@ type ConversationUseCase struct {
 	webAPI TranslationWebAPI
 }
 
+// Message struct to hold message data
+type Message struct {
+	Type      string `json:"type"`
+	Sender    string `json:"sender"`
+	Recipient string `json:"recipient"`
+	Content   string `json:"content"`
+	ID        string `json:"id"`
+}
+
+type Client struct {
+	ID   string
+	Conn *websocket.Conn
+	send chan Message
+	hub  *Hub
+}
+
+type Hub struct {
+	Clients    map[string]map[*Client]bool
+	Register   chan *Client
+	Unregister chan *Client
+	Broadcast  chan Message
+	mu         sync.Mutex
+}
+
 // New -.
 func NewConversation(r ConversationRepo, w TranslationWebAPI) *ConversationUseCase {
 	return &ConversationUseCase{
@@ -45,27 +68,12 @@ func NewConversation(r ConversationRepo, w TranslationWebAPI) *ConversationUseCa
 	}
 }
 
-type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Send chan []byte
-	Hub  *Hub
-}
-
-type Hub struct {
-	Clients    map[string]*Client
-	Register   chan *Client
-	Unregister chan *Client
-	Broadcast  chan []byte
-	mu         sync.Mutex
-}
-
 func NewHub() *Hub {
 	return &Hub{
-		Broadcast:  make(chan []byte),
+		Broadcast:  make(chan Message),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Clients:    make(map[string]*Client),
+		Clients:    make(map[string]map[*Client]bool),
 	}
 }
 
@@ -81,81 +89,105 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.Register:
 			h.mu.Lock()
-			h.Clients[client.ID] = client
+			h.RegisterNewClient(client)
+			// h.Clients[client.ID] = client
 			h.mu.Unlock()
 			fmt.Printf("Client %s connected\n", client.ID)
 		case client := <-h.Unregister:
 			h.mu.Lock()
 			if _, ok := h.Clients[client.ID]; ok {
 				delete(h.Clients, client.ID)
-				close(client.Send)
+				close(client.send)
 			}
 			h.mu.Unlock()
 			fmt.Printf("Client %s disconnected\n", client.ID)
 		case message := <-h.Broadcast:
 			h.mu.Lock()
-			for id, client := range h.Clients {
-				select {
-				case client.Send <- message:
-				default:
-					close(client.Send)
-					delete(h.Clients, id)
-				}
-			}
+			h.HandleMessage(message)
+			// for id, client := range h.Clients {
+			// 	select {
+			// 	case client.Send <- message:
+			// 	default:
+			// 		close(client.Send)
+			// 		delete(h.Clients, id)
+			// 	}
+			// }
 			h.mu.Unlock()
 		}
 	}
 }
 
-// func (c *Client) ReadPump() {
-// 	defer func() {
-// 		c.Hub.Unregister <- c
-// 		c.Conn.Close()
-// 	}()
-// 	for {
-// 		_, message, err := c.Conn.ReadMessage()
-// 		if err != nil {
-// 			log.Println("read:", err)
-// 			break
-// 		}
-// 		c.Hub.Broadcast <- message
-// 	}
-// }
+// function check if room exists and if not create it and add client to it
+func (h *Hub) RegisterNewClient(client *Client) {
+	connections := h.Clients[client.ID]
+	if connections == nil {
+		connections = make(map[*Client]bool)
+		h.Clients[client.ID] = connections
+	}
+	h.Clients[client.ID][client] = true
 
-// func (c *Client) WritePump() {
-// 	for message := range c.Send {
-// 		err := c.Conn.WriteMessage(websocket.TextMessage, message)
-// 		if err != nil {
-// 			log.Println("write:", err)
-// 			break
-// 		}
-// 	}
-// 	c.Conn.Close()
-// }
+	fmt.Println("Size of Clients: ", len(h.Clients[client.ID]))
+}
 
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
+// function to remove client from room
+func (h *Hub) RemoveClient(client *Client) {
+	if _, ok := h.Clients[client.ID]; ok {
+		delete(h.Clients[client.ID], client)
+		close(client.send)
+		fmt.Println("Removed client")
+	}
+}
+
+// function to handle message based on type of message
+func (h *Hub) HandleMessage(message Message) {
+	fmt.Println("HandleMessage: ", message)
+	//Check if the message is a type of "message"
+	if message.Type == "message" {
+		clients := h.Clients[message.ID]
+		for client := range clients {
+			select {
+			case client.send <- message:
+			default:
+				close(client.send)
+				delete(h.Clients[message.ID], client)
+			}
+		}
+	}
+
+	//Check if the message is a type of "notification"
+	if message.Type == "notification" {
+		fmt.Println("Notification: ", message.Content)
+		clients := h.Clients[message.Recipient]
+		for client := range clients {
+			select {
+			case client.send <- message:
+			default:
+				close(client.send)
+				delete(h.Clients[message.Recipient], client)
+			}
+		}
+	}
+
+}
+
 func (c *Client) readPump() {
 	defer func() {
-		c.Hub.Unregister <- c
+		c.hub.Unregister <- c
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.Conn.ReadMessage()
+		var msg Message
+		err := c.Conn.ReadJSON(&msg)
+
+		fmt.Println("readPump: ", msg)
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
-			}
+			fmt.Println("Error: ", err)
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.Hub.Broadcast <- message
+		c.hub.Broadcast <- msg
 	}
 }
 
@@ -167,29 +199,20 @@ func (c *Client) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.Send:
+		case message, ok := <-c.send:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
 				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
-			}
+			} else {
+				err := c.Conn.WriteJSON(message)
 
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(c.Send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.Send)
-			}
-
-			if err := w.Close(); err != nil {
-				return
+				fmt.Println("writePump: ", message)
+				if err != nil {
+					fmt.Println("Error: ", err)
+					break
+				}
 			}
 		case <-ticker.C:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -198,6 +221,11 @@ func (c *Client) writePump() {
 			}
 		}
 	}
+}
+
+// NewClient creates a new client
+func NewClient(id string, conn *websocket.Conn, hub *Hub) *Client {
+	return &Client{ID: id, Conn: conn, send: make(chan Message, 256), hub: hub}
 }
 
 var upgrader = websocket.Upgrader{
@@ -212,10 +240,12 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
 		log.Println(err)
 		return
 	}
-	// clientID := c.Request.URL.Query().Get("id")
-	clientID := "thisIsClientID"
-	// clientID := r.URL.Query().Get("id")
-	client := &Client{ID: clientID, Conn: conn, Send: make(chan []byte, 256), Hub: hub}
+	// clientId := c.Request.URL.Query().Get("clientId")
+	// clientID := "thisIsClientID"
+	// clientID := c.Request.Header.Get("Sec-Websocket-Key")
+
+	clientId := c.Param("clientId")
+	client := NewClient(clientId, conn, hub)
 	hub.Register <- client
 	// client.Hub.Register <- client
 
@@ -232,9 +262,11 @@ func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Requ
 	// clientID := c.Request.URL.Query().Get("id")
 	clientID := "thisIsClientID"
 	// clientID := r.URL.Query().Get("id")
-	client := &Client{ID: clientID, Conn: conn, Send: make(chan []byte, 256), Hub: hub}
+
+	client := NewClient(clientID, conn, hub)
+	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
 	// hub.Register <- client
-	client.Hub.Register <- client
+	client.hub.Register <- client
 
 	go client.writePump()
 	go client.readPump()
