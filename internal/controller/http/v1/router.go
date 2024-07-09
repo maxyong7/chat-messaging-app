@@ -15,6 +15,12 @@ import (
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
 )
 
+type RouterUseCases struct {
+	Translation  usecase.Translation
+	Verification usecase.Verification
+	Conversation usecase.Conversation
+}
+
 // NewRouter -.
 // Swagger spec:
 // @title       Go Clean Template API
@@ -22,7 +28,7 @@ import (
 // @version     1.0
 // @host        localhost:8080
 // @BasePath    /v1
-func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Translation, v usecase.Verification) {
+func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
@@ -37,10 +43,27 @@ func NewRouter(handler *gin.Engine, l logger.Interface, t usecase.Translation, v
 	// Prometheus metrics
 	handler.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
+	// Home route
+	handler.GET("/", serveHome)
+
 	// Routers
 	h := handler.Group("/v1")
 	{
-		newTranslationRoutes(h, t, l)
-		newUserVerificationRoute(h, v, l)
+		newTranslationRoutes(h, uc.Translation, l)
+		newUserVerificationRoute(h, uc.Verification, l)
+		newConversationRoute(h, uc.Conversation, l)
 	}
+
+}
+
+func serveHome(c *gin.Context) {
+	if c.Request.URL.Path != "/" {
+		c.String(http.StatusNotFound, "Not found")
+		return
+	}
+	if c.Request.Method != http.MethodGet {
+		c.String(http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	c.File("home.html")
 }

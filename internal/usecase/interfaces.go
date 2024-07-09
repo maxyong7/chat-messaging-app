@@ -3,7 +3,9 @@ package usecase
 
 import (
 	"context"
+	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
@@ -38,5 +40,13 @@ type (
 		GetUserInfo(context.Context, entity.UserInfo) (*entity.UserInfoDTO, error)
 		StoreUserInfo(context.Context, entity.UserInfo) error
 		CheckUserExist(context.Context, entity.UserInfo) (bool, error)
+	}
+
+	Conversation interface {
+		ServeWs(*gin.Context, *Hub)
+		ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
+	}
+
+	ConversationRepo interface {
 	}
 )
