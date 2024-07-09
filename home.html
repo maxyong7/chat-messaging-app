@@ -29,7 +29,7 @@ window.onload = function () {
     };
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "v1/conversation/ws1");
+        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws");
         conn.onerror = function (evt) {
             console.log("Error message")
             var messages = evt.data.split('\n');

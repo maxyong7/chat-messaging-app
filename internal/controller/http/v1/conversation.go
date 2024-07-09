@@ -19,7 +19,7 @@ func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l lo
 
 	h := handler.Group("/conversation")
 	{
-		h.GET("/ws1", func(c *gin.Context) {
+		h.GET("/ws", func(c *gin.Context) {
 			route.t.ServeWs(c, hub)
 		})
 		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
