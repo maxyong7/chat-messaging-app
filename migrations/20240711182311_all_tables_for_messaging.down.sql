@@ -1,4 +1,3 @@
-
 ALTER TABLE user_credentials 
 RENAME TO users;
 
