@@ -31,7 +31,7 @@ type (
 
 	// Verification -.
 	Verification interface {
-		VerifyCredentials(context.Context, entity.UserCredentials) (bool, error)
+		VerifyCredentials(context.Context, entity.UserCredentials) (string, bool, error)
 		RegisterUser(context.Context, entity.UserRegistration) error
 	}
 
