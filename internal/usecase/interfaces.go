@@ -31,15 +31,15 @@ type (
 
 	// Verification -.
 	Verification interface {
-		VerifyCredentials(context.Context, entity.UserInfo) (bool, error)
-		RegisterUser(context.Context, entity.UserInfo) error
+		VerifyCredentials(context.Context, entity.UserCredentials) (bool, error)
+		RegisterUser(context.Context, entity.UserRegistration) error
 	}
 
 	// UserRepo -.
 	UserRepo interface {
-		GetUserInfo(context.Context, entity.UserInfo) (*entity.UserInfoDTO, error)
-		StoreUserInfo(context.Context, entity.UserInfo) error
-		CheckUserExist(context.Context, entity.UserInfo) (bool, error)
+		GetUserInfo(context.Context, entity.UserCredentials) (*entity.UserInfoDTO, error)
+		StoreUserInfo(context.Context, entity.UserRegistration) error
+		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 	}
 
 	Conversation interface {

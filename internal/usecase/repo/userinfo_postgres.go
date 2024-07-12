@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
@@ -21,7 +22,7 @@ func NewUserInfo(pg *postgres.Postgres) *UserInfoRepo {
 }
 
 // GetUserInfo -.
-func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo) (*entity.UserInfoDTO, error) {
+func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserInfoDTO, error) {
 	sql, args, err := r.Builder.
 		Select("*").
 		From("user_credentials").
@@ -50,35 +51,54 @@ func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo
 }
 
 // StoreUserInfo -.
-func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userInfo entity.UserInfo) error {
-	sql, args, err := r.Builder.
-		Insert("user_credentials").
-		Columns("email", "username", "password").
-		Values(userInfo.Email, userInfo.Username, userInfo.Password).
-		Suffix("ON CONFLICT (email, username) DO NOTHING").
-		ToSql()
+func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistration) error {
+	// sql, args, err := r.Builder.
+	// 	Insert("user_credentials").
+	// 	Columns("email", "username", "password").
+	// 	Values(userRegis.Email, userRegis.Username, userRegis.Password).
+	// 	Suffix("ON CONFLICT (email, username) DO NOTHING").
+	// 	ToSql()
+	// if err != nil {
+	// 	return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Builder: %w", err)
+	// }
+
+	// _, err = r.Pool.Exec(ctx, sql, args...)
+	// if err != nil {
+	// 	return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Pool.Exec: %w", err)
+	// }
+
+	userUuid := uuid.New()
+	insertUserCredentialsSQL := `
+		INSERT INTO user_credentials (email, username, password, user_uuid)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err := r.Pool.Exec(ctx, insertUserCredentialsSQL, userRegis.Email, userRegis.Username, userRegis.Password, userUuid)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Builder: %w", err)
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - insertUserCredentials: %w", err)
 	}
 
-	_, err = r.Pool.Exec(ctx, sql, args...)
+	insertUserInfoSQL := `
+		INSERT INTO user_info (user_uuid, first_name, last_name, email, avatar)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err = r.Pool.Exec(ctx, insertUserInfoSQL, userUuid, userRegis.FirstName, userRegis.LastName, userRegis.Email, userRegis.Avatar)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Pool.Exec: %w", err)
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - insertUserInfo: %w", err)
 	}
 
 	return nil
 }
 
 // GetUserInfo -.
-func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userInfo entity.UserInfo) (bool, error) {
+func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
 	// Check if the user already exists
 	sql, args, err := r.Builder.
 		Select("1").
-		From("users").
+		From("user_credentials").
 		Where(
 			squirrel.Or{
-				squirrel.Eq{"username": userInfo.Username},
-				squirrel.Eq{"email": userInfo.Email},
+				squirrel.Eq{"username": userRegis.Username},
+				squirrel.Eq{"email": userRegis.Email},
 			},
 		).
 		ToSql()

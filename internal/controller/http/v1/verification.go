@@ -47,7 +47,7 @@ type userRequest struct {
 // @Failure     500 {object} response
 // @Router      /user/verify [post]
 func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
-	var request userRequest
+	var request entity.UserRegistration
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - doTranslate")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
@@ -56,7 +56,7 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 
 	isValid, err := r.t.VerifyCredentials(
 		c.Request.Context(),
-		entity.UserInfo{
+		entity.UserCredentials{
 			Username: request.Username,
 			Password: request.Password,
 			Email:    request.Email,
@@ -84,21 +84,14 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 // @Failure     500 {object} response
 // @Router      /user/verify [post]
 func (r *webserverRoutes) registerUser(c *gin.Context) {
-	var request userRequest
+	var request entity.UserRegistration
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - doTranslate")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	err := r.t.RegisterUser(
-		c.Request.Context(),
-		entity.UserInfo{
-			Username: request.Username,
-			Password: request.Password,
-			Email:    request.Email,
-		},
-	)
+	err := r.t.RegisterUser(c.Request.Context(), request)
 	if err != nil {
 		r.l.Error(err, "http - v1 - registerUser")
 		handleCustomErrors(c, err)

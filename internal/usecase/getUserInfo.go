@@ -22,7 +22,7 @@ func NewAuth(r UserRepo, w TranslationWebAPI) *LoginUseCase {
 }
 
 // VerifyCredentials -.
-func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserInfo) (bool, error) {
+func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (bool, error) {
 	userInfo, err := uc.repo.GetUserInfo(ctx, v)
 	if err != nil {
 		return false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
@@ -35,8 +35,8 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserInfo
 }
 
 // RegisterUser -.
-func (uc *LoginUseCase) RegisterUser(ctx context.Context, userInfo entity.UserInfo) error {
-	exist, err := uc.repo.CheckUserExist(ctx, userInfo)
+func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
+	exist, err := uc.repo.CheckUserExist(ctx, userRegistration)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userInfo entity.UserIn
 		return entity.ErrUserAlreadyExists
 	}
 
-	err = uc.repo.StoreUserInfo(context.Background(), userInfo)
+	err = uc.repo.StoreUserInfo(context.Background(), userRegistration)
 	if err != nil {
 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)
 	}
