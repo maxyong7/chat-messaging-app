@@ -21,4 +21,5 @@ type UserInfoDTO struct {
 	Username string `db:"username"`
 	Password string `db:"password"`
 	Email    string `db:"email"`
+	UserUuid string `db:"user_uuid"`
 }

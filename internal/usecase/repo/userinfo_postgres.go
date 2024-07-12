@@ -23,26 +23,18 @@ func NewUserInfo(pg *postgres.Postgres) *UserInfoRepo {
 
 // GetUserInfo -.
 func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserInfoDTO, error) {
-	sql, args, err := r.Builder.
-		Select("*").
-		From("user_credentials").
-		Where(
-			squirrel.Or{
-				squirrel.Eq{"username": userInfo.Username},
-				squirrel.Eq{"email": userInfo.Email},
-			},
-		).
-		ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("UserInfoRepo - GetUserInfo - r.Builder: %w", err)
-	}
+	sql := `
+		SELECT email, username, password, user_uuid
+		FROM user_credentials
+		WHERE (username = $1 OR email = $2) 
+	`
 
 	var userInfoDTO entity.UserInfoDTO
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&userInfoDTO.ID, &userInfoDTO.Username, &userInfoDTO.Password, &userInfoDTO.Email)
+	err := r.Pool.QueryRow(ctx, sql, userInfo.Username, userInfo.Email).
+		Scan(&userInfoDTO.Email, &userInfoDTO.Username, &userInfoDTO.Password, &userInfoDTO.UserUuid)
 	if err != nil {
-		if err != pgx.ErrNoRows {
-			return &userInfoDTO, nil
+		if err == pgx.ErrNoRows {
+			return nil, nil
 		}
 		return nil, fmt.Errorf("UserInfoRepo - GetUserInfo - r.Pool.QueryRow: %w", err)
 	}
@@ -52,38 +44,45 @@ func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserCred
 
 // StoreUserInfo -.
 func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistration) error {
-	// sql, args, err := r.Builder.
-	// 	Insert("user_credentials").
-	// 	Columns("email", "username", "password").
-	// 	Values(userRegis.Email, userRegis.Username, userRegis.Password).
-	// 	Suffix("ON CONFLICT (email, username) DO NOTHING").
-	// 	ToSql()
-	// if err != nil {
-	// 	return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Builder: %w", err)
-	// }
-
-	// _, err = r.Pool.Exec(ctx, sql, args...)
-	// if err != nil {
-	// 	return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Pool.Exec: %w", err)
-	// }
-
 	userUuid := uuid.New()
+	// Begin a transaction
+	tx, err := r.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to begin transaction: %w", err)
+	}
+
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback(ctx)
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback(ctx) // err is non-nil; rollback
+		}
+	}()
+
 	insertUserCredentialsSQL := `
 		INSERT INTO user_credentials (email, username, password, user_uuid)
 		VALUES ($1, $2, $3, $4)
 	`
-	_, err := r.Pool.Exec(ctx, insertUserCredentialsSQL, userRegis.Email, userRegis.Username, userRegis.Password, userUuid)
+	_, err = tx.Exec(ctx, insertUserCredentialsSQL, userRegis.Email, userRegis.Username, userRegis.Password, userUuid)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - insertUserCredentials: %w", err)
+		return fmt.Errorf("failed to execute insert insertUserCredentialsSQL query: %w", err)
 	}
 
 	insertUserInfoSQL := `
 		INSERT INTO user_info (user_uuid, first_name, last_name, email, avatar)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4)
 	`
-	_, err = r.Pool.Exec(ctx, insertUserInfoSQL, userUuid, userRegis.FirstName, userRegis.LastName, userRegis.Email, userRegis.Avatar)
+	_, err = tx.Exec(ctx, insertUserInfoSQL, userUuid, userRegis.FirstName, userRegis.LastName, userRegis.Email, userRegis.Avatar)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - insertUserInfo: %w", err)
+		return fmt.Errorf("failed to execute insert insertUserInfoSQL query: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to commit transaction: %w", err)
 	}
 
 	return nil
