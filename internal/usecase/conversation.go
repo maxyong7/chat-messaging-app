@@ -46,10 +46,11 @@ type Message struct {
 }
 
 type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	send chan Message
-	hub  *Hub
+	ID     string
+	UserID string
+	Conn   *websocket.Conn
+	send   chan Message
+	hub    *Hub
 }
 
 type Hub struct {
@@ -224,8 +225,8 @@ func (c *Client) writePump() {
 }
 
 // NewClient creates a new client
-func NewClient(id string, conn *websocket.Conn, hub *Hub) *Client {
-	return &Client{ID: id, Conn: conn, send: make(chan Message, 256), hub: hub}
+func NewClient(id string, userId string, conn *websocket.Conn, hub *Hub) *Client {
+	return &Client{ID: id, UserID: userId, Conn: conn, send: make(chan Message, 256), hub: hub}
 }
 
 var upgrader = websocket.Upgrader{
@@ -234,7 +235,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
+func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub, userId string) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println(err)
@@ -244,8 +245,8 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
 	// clientID := "thisIsClientID"
 	// clientID := c.Request.Header.Get("Sec-Websocket-Key")
 
-	clientId := c.Param("clientId")
-	client := NewClient(clientId, conn, hub)
+	clientId := c.Param("conversationId")
+	client := NewClient(clientId, userId, conn, hub)
 	hub.Register <- client
 	// client.Hub.Register <- client
 
@@ -253,21 +254,21 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
 	go client.readPump()
 }
 
-func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Request, hub *Hub) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	// clientID := c.Request.URL.Query().Get("id")
-	clientID := "thisIsClientID"
-	// clientID := r.URL.Query().Get("id")
+// func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Request, hub *Hub) {
+// 	conn, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return
+// 	}
+// 	// clientID := c.Request.URL.Query().Get("id")
+// 	clientID := "thisIsClientID"
+// 	// clientID := r.URL.Query().Get("id")
 
-	client := NewClient(clientID, conn, hub)
-	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
-	// hub.Register <- client
-	client.hub.Register <- client
+// 	client := NewClient(clientID, conn, hub)
+// 	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
+// 	// hub.Register <- client
+// 	client.hub.Register <- client
 
-	go client.writePump()
-	go client.readPump()
-}
+// 	go client.writePump()
+// 	go client.readPump()
+// }

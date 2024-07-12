@@ -3,7 +3,6 @@ package usecase
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
@@ -43,8 +42,8 @@ type (
 	}
 
 	Conversation interface {
-		ServeWs(*gin.Context, *Hub)
-		ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
+		ServeWs(*gin.Context, *Hub, string)
+		// ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
 	}
 
 	ConversationRepo interface {
