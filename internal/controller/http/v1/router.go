@@ -19,6 +19,7 @@ type RouterUseCases struct {
 	Translation  usecase.Translation
 	Verification usecase.Verification
 	Conversation usecase.Conversation
+	Inbox        usecase.Inbox
 }
 
 // NewRouter -.
@@ -52,6 +53,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 		newTranslationRoutes(h, uc.Translation, l)
 		newUserVerificationRoute(h, uc.Verification, l)
 		newConversationRoute(h, uc.Conversation, l)
+		newInboxRoute(h, uc.Inbox, l)
 	}
 
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
@@ -21,27 +22,19 @@ func NewUserInfo(pg *postgres.Postgres) *UserInfoRepo {
 }
 
 // GetUserInfo -.
-func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo) (*entity.UserInfoDTO, error) {
-	sql, args, err := r.Builder.
-		Select("*").
-		From("users").
-		Where(
-			squirrel.Or{
-				squirrel.Eq{"username": userInfo.Username},
-				squirrel.Eq{"email": userInfo.Email},
-			},
-		).
-		ToSql()
-
-	if err != nil {
-		return nil, fmt.Errorf("UserInfoRepo - GetUserInfo - r.Builder: %w", err)
-	}
+func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserInfoDTO, error) {
+	sql := `
+		SELECT email, username, password, user_uuid
+		FROM user_credentials
+		WHERE (username = $1 OR email = $2) 
+	`
 
 	var userInfoDTO entity.UserInfoDTO
-	err = r.Pool.QueryRow(ctx, sql, args...).Scan(&userInfoDTO.ID, &userInfoDTO.Username, &userInfoDTO.Password, &userInfoDTO.Email)
+	err := r.Pool.QueryRow(ctx, sql, userInfo.Username, userInfo.Email).
+		Scan(&userInfoDTO.Email, &userInfoDTO.Username, &userInfoDTO.Password, &userInfoDTO.UserUuid)
 	if err != nil {
-		if err != pgx.ErrNoRows {
-			return &userInfoDTO, nil
+		if err == pgx.ErrNoRows {
+			return nil, nil
 		}
 		return nil, fmt.Errorf("UserInfoRepo - GetUserInfo - r.Pool.QueryRow: %w", err)
 	}
@@ -50,35 +43,61 @@ func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo
 }
 
 // StoreUserInfo -.
-func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userInfo entity.UserInfo) error {
-	sql, args, err := r.Builder.
-		Insert("users").
-		Columns("email", "username", "password").
-		Values(userInfo.Email, userInfo.Username, userInfo.Password).
-		Suffix("ON CONFLICT (email, username) DO NOTHING").
-		ToSql()
+func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistration) error {
+	userUuid := uuid.New()
+	// Begin a transaction
+	tx, err := r.Pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Builder: %w", err)
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to begin transaction: %w", err)
 	}
 
-	_, err = r.Pool.Exec(ctx, sql, args...)
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback(ctx)
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback(ctx) // err is non-nil; rollback
+		}
+	}()
+
+	insertUserCredentialsSQL := `
+		INSERT INTO user_credentials (email, username, password, user_uuid)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err = tx.Exec(ctx, insertUserCredentialsSQL, userRegis.Email, userRegis.Username, userRegis.Password, userUuid)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - r.Pool.Exec: %w", err)
+		return fmt.Errorf("failed to execute insert insertUserCredentialsSQL query: %w", err)
+	}
+
+	insertUserInfoSQL := `
+		INSERT INTO user_info (user_uuid, first_name, last_name, email, avatar)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err = tx.Exec(ctx, insertUserInfoSQL, userUuid, userRegis.FirstName, userRegis.LastName, userRegis.Email, userRegis.Avatar)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert insertUserInfoSQL query: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
 // GetUserInfo -.
-func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userInfo entity.UserInfo) (bool, error) {
+func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
 	// Check if the user already exists
 	sql, args, err := r.Builder.
 		Select("1").
-		From("users").
+		From("user_credentials").
 		Where(
 			squirrel.Or{
-				squirrel.Eq{"username": userInfo.Username},
-				squirrel.Eq{"email": userInfo.Email},
+				squirrel.Eq{"username": userRegis.Username},
+				squirrel.Eq{"email": userRegis.Email},
 			},
 		).
 		ToSql()
