@@ -1,4 +1,4 @@
-ALTER TABLE user_credentials 
+ALTER TABLE IF EXISTS user_credentials 
 RENAME TO users;
 
 DROP TABLE IF EXISTS user_info;
