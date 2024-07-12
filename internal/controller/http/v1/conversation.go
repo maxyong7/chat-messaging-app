@@ -16,10 +16,12 @@ type conversationRoutes struct {
 
 func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l logger.Interface) {
 	route := &conversationRoutes{t, l}
+	hub := usecase.NewHub()
+	go hub.Run()
 
 	h := handler.Group("/conversation")
 	{
-		h.GET("/ws/:conversationId", route.ServeWsController)
+		h.GET("/ws/:conversationId", route.ServeWsController(hub))
 		// h.GET("/ws/:clientId", func(c *gin.Context) {
 
 		// 	route.t.ServeWs(c, hub)
@@ -34,20 +36,19 @@ func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l lo
 	}
 }
 
-func (r *conversationRoutes) ServeWsController(c *gin.Context) {
-	hub := usecase.NewHub()
-	go hub.Run()
+func (r *conversationRoutes) ServeWsController(hub *usecase.Hub) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId, err := getUserIDFromContext(c)
+		if err != nil {
+			errorResponse(c, http.StatusUnauthorized, "unauthorized")
+			return
+		}
 
-	userId, err := getUserIDFromContext(c)
-	if err != nil {
-		errorResponse(c, http.StatusUnauthorized, "unauthorized")
-		return
+		// hub := usecase.NewHub()
+		// go hub.Run()
+
+		r.t.ServeWs(c, hub, userId)
 	}
-
-	// hub := usecase.NewHub()
-	// go hub.Run()
-
-	r.t.ServeWs(c, hub, userId)
 }
 
 // func main() {
