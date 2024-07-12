@@ -26,7 +26,7 @@ func newUserVerificationRoute(handler *gin.RouterGroup, t usecase.Verification, 
 }
 
 type webserverResponse struct {
-	IsValid bool `json:"is_valid"`
+	Token string `json:"token,omitempty"`
 }
 
 type userRequest struct {
@@ -54,7 +54,7 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 		return
 	}
 
-	isValid, err := r.t.VerifyCredentials(
+	userUuid, isValid, err := r.t.VerifyCredentials(
 		c.Request.Context(),
 		entity.UserCredentials{
 			Username: request.Username,
@@ -65,11 +65,25 @@ func (r *webserverRoutes) verifyCredentials(c *gin.Context) {
 	if err != nil {
 		r.l.Error(err, "http - v1 - verifyCredentials")
 		handleCustomErrors(c, err)
-
 		return
 	}
 
-	c.JSON(http.StatusOK, webserverResponse{IsValid: isValid})
+	if isValid && userUuid != "" {
+		token, err := createToken(userUuid)
+		if err != nil {
+			r.l.Error(err, "http - v1 - createToken")
+			handleCustomErrors(c, err)
+			return
+		}
+
+		// c.Writer.Header().Set("Content-Type", "application/json")
+		c.JSON(http.StatusOK, webserverResponse{
+			Token: token,
+		})
+		return
+	}
+
+	c.JSON(http.StatusNotFound, webserverResponse{})
 }
 
 // @Summary     RegisterUser

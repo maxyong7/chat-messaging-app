@@ -44,16 +44,20 @@ func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 	// Prometheus metrics
 	handler.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// Home route
-	handler.GET("/", serveHome)
+	publicHandler := handler.Group("")
+	{
+		// Home route
+		handler.GET("/", serveHome)
+		newUserVerificationRoute(publicHandler, uc.Verification, l)
+	}
 
 	// Routers
-	h := handler.Group("/v1")
+	protectedHandler := handler.Group("/v1")
+	protectedHandler.Use(authMiddleware)
 	{
-		newTranslationRoutes(h, uc.Translation, l)
-		newUserVerificationRoute(h, uc.Verification, l)
-		newConversationRoute(h, uc.Conversation, l)
-		newInboxRoute(h, uc.Inbox, l)
+		newTranslationRoutes(protectedHandler, uc.Translation, l)
+		newConversationRoute(protectedHandler, uc.Conversation, l)
+		newInboxRoute(protectedHandler, uc.Inbox, l)
 	}
 
 }

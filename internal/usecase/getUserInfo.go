@@ -22,16 +22,20 @@ func NewAuth(r UserRepo, w TranslationWebAPI) *LoginUseCase {
 }
 
 // VerifyCredentials -.
-func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (bool, error) {
+func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (string, bool, error) {
 	userInfo, err := uc.repo.GetUserInfo(ctx, v)
 	if err != nil {
-		return false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
+		return "", false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
+	}
+
+	if userInfo == nil {
+		return "", false, nil
 	}
 
 	if userInfo.Password == v.Password {
-		return true, nil
+		return userInfo.UserUuid, true, nil
 	}
-	return false, nil
+	return "", false, nil
 }
 
 // RegisterUser -.
