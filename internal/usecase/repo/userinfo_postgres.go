@@ -24,7 +24,7 @@ func NewUserInfo(pg *postgres.Postgres) *UserInfoRepo {
 func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo) (*entity.UserInfoDTO, error) {
 	sql, args, err := r.Builder.
 		Select("*").
-		From("users").
+		From("user_credentials").
 		Where(
 			squirrel.Or{
 				squirrel.Eq{"username": userInfo.Username},
@@ -52,7 +52,7 @@ func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserInfo
 // StoreUserInfo -.
 func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userInfo entity.UserInfo) error {
 	sql, args, err := r.Builder.
-		Insert("users").
+		Insert("user_credentials").
 		Columns("email", "username", "password").
 		Values(userInfo.Email, userInfo.Username, userInfo.Password).
 		Suffix("ON CONFLICT (email, username) DO NOTHING").

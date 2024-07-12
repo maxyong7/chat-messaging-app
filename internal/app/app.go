@@ -43,6 +43,9 @@ func Run(cfg *config.Config) {
 		repo.NewConversation(pg),
 		webapi.New(),
 	)
+	inboxUseCase := usecase.NewInbox(
+		repo.NewConversation(pg),
+	)
 
 	// // RabbitMQ RPC Server
 	// rmqRouter := amqprpc.NewRouter(translationUseCase)
@@ -58,6 +61,7 @@ func Run(cfg *config.Config) {
 		Translation:  translationUseCase,
 		Verification: verificationUseCase,
 		Conversation: conversationUseCase,
+		Inbox:        inboxUseCase,
 	}
 	v1.NewRouter(handler, l, routerUseCase)
 
