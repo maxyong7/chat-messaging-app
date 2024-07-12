@@ -1,4 +1,4 @@
-ALTER TABLE users
+ALTER TABLE IF EXISTS users
 RENAME TO user_credentials;
 
 CREATE TABLE IF NOT EXISTS user_info (
