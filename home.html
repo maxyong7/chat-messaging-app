@@ -49,11 +49,11 @@ window.onload = function () {
         }
 
         var message = {
-            type: "message",
+            // type: "message",
             sender: getUserId(),  // Adjust this as needed
-            recipient: "user2",  // Adjust this as needed
+            // recipient: "user2",  // Adjust this as needed
             content: msg.value,
-            id: "room1"  // Adjust this as needed
+            conversation_uuid: "room1"  // Adjust this as needed
         };
         
         conn.send(JSON.stringify(message));
@@ -81,11 +81,9 @@ window.onload = function () {
             console.log("received message");
             try {
                 var message = JSON.parse(evt.data);
-                if (message.type === "message") {
-                    var item = document.createElement("div");
-                    item.innerText = message.sender + ": " + message.content;
-                    appendLog(item);
-                }
+                var item = document.createElement("div");
+                item.innerText = message.sender_first_name + " "+ message.sender_last_name + ": " + message.content;
+                appendLog(item);
             } catch (e) {
                 console.error("Error parsing JSON message:", e);
             }

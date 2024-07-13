@@ -36,9 +36,10 @@ type (
 
 	// UserRepo -.
 	UserRepo interface {
-		GetUserInfo(context.Context, entity.UserCredentials) (*entity.UserInfoDTO, error)
+		GetUserCredentials(context.Context, entity.UserCredentials) (*entity.UserCredentialsDTO, error)
 		StoreUserInfo(context.Context, entity.UserRegistration) error
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
+		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
 	}
 
 	Conversation interface {

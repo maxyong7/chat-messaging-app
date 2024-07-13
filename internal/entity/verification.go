@@ -16,10 +16,17 @@ type UserRegistration struct {
 	Avatar    string `json:"avatar,omitempty"  example:"avatar"`
 }
 
-type UserInfoDTO struct {
+type UserCredentialsDTO struct {
 	ID       int    `db:"id"`
 	Username string `db:"username"`
 	Password string `db:"password"`
 	Email    string `db:"email"`
 	UserUuid string `db:"user_uuid"`
+}
+
+type UserInfoDTO struct {
+	UserUUID  string `json:"user_uuid"`
+	FirstName string `json:"first_name"  example:"first_name"`
+	LastName  string `json:"last_name"  example:"last_name"`
+	Avatar    string `json:"avatar,omitempty"  example:"avatar"`
 }

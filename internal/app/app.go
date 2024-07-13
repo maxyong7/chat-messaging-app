@@ -30,18 +30,19 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Close()
 
+	userInfoRepo := repo.NewUserInfo(pg)
 	// Use case
 	translationUseCase := usecase.New(
 		repo.New(pg),
 		webapi.New(),
 	)
 	verificationUseCase := usecase.NewAuth(
-		repo.NewUserInfo(pg),
+		userInfoRepo,
 		webapi.New(),
 	)
 	conversationUseCase := usecase.NewConversation(
 		repo.NewConversation(pg),
-		webapi.New(),
+		userInfoRepo,
 	)
 	inboxUseCase := usecase.NewInbox(
 		repo.NewConversation(pg),
