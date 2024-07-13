@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
@@ -180,18 +181,23 @@ func (c *Client) readPump() {
 		var msg Message
 		err := c.Conn.ReadJSON(&msg)
 		msg.ConversationUUID = c.ID
+		msg.MessageUUID = uuid.New().String()
+		msg.SenderUUID = c.UserInfo.UserUUID
 		msg.CreatedAt = time.Now()
-
-		msgResponse := c.buildMessageResponse(msg)
 
 		fmt.Println("readPump: ", msg)
 		if err != nil {
 			fmt.Println("Error: ", err)
 			break
 		}
+		err = c.repo.StoreConversation(msg)
+		if err != nil {
+			fmt.Println("Conversation - readPump - StoreConversation err: ", err)
+			break
+		}
+		msgResponse := c.buildMessageResponse(msg)
 		c.hub.Broadcast <- msgResponse
-		// TODO: ADD database insert
-		// c.repo.GetConversations(
+
 	}
 }
 
