@@ -57,11 +57,15 @@ func queryParamCursor(c *gin.Context) (time.Time, error) {
 func authMiddleware(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
 	if tokenString == "" {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+		tokenString = c.GetHeader("Sec-Websocket-Protocol")
+		if tokenString == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		tokenString = strings.Replace(tokenString, "access_token, ", "", 1)
+	} else {
+		tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
 	}
-
-	tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

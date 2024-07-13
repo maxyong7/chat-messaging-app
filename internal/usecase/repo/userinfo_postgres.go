@@ -21,22 +21,22 @@ func NewUserInfo(pg *postgres.Postgres) *UserInfoRepo {
 	return &UserInfoRepo{pg}
 }
 
-// GetUserInfo -.
-func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserInfoDTO, error) {
+// GetUserCredentials -.
+func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserCredentialsDTO, error) {
 	sql := `
 		SELECT email, username, password, user_uuid
 		FROM user_credentials
 		WHERE (username = $1 OR email = $2) 
 	`
 
-	var userInfoDTO entity.UserInfoDTO
+	var userInfoDTO entity.UserCredentialsDTO
 	err := r.Pool.QueryRow(ctx, sql, userInfo.Username, userInfo.Email).
 		Scan(&userInfoDTO.Email, &userInfoDTO.Username, &userInfoDTO.Password, &userInfoDTO.UserUuid)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("UserInfoRepo - GetUserInfo - r.Pool.QueryRow: %w", err)
+		return nil, fmt.Errorf("UserInfoRepo - GetUserCredentials - r.Pool.QueryRow: %w", err)
 	}
 
 	return &userInfoDTO, nil
@@ -72,7 +72,7 @@ func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserR
 
 	insertUserInfoSQL := `
 		INSERT INTO user_info (user_uuid, first_name, last_name, email, avatar)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 	_, err = tx.Exec(ctx, insertUserInfoSQL, userUuid, userRegis.FirstName, userRegis.LastName, userRegis.Email, userRegis.Avatar)
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserR
 	return nil
 }
 
-// GetUserInfo -.
+// GetUserCredentials -.
 func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
 	// Check if the user already exists
 	sql, args, err := r.Builder.
@@ -117,4 +117,25 @@ func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.User
 	}
 
 	return false, nil
+}
+
+// GetUserCredentials -.
+func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userUuid string) (*entity.UserInfoDTO, error) {
+	sql := `
+		SELECT user_uuid, first_name, last_name, avatar
+		FROM user_info
+		WHERE (user_uuid = $1) 
+	`
+
+	var userInfoDTO entity.UserInfoDTO
+	err := r.Pool.QueryRow(ctx, sql, userUuid).
+		Scan(&userInfoDTO.UserUUID, &userInfoDTO.FirstName, &userInfoDTO.LastName, &userInfoDTO.Avatar)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("UserInfoRepo - GetUserCredentials - r.Pool.QueryRow: %w", err)
+	}
+
+	return &userInfoDTO, nil
 }

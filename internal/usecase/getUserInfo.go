@@ -23,7 +23,7 @@ func NewAuth(r UserRepo, w TranslationWebAPI) *LoginUseCase {
 
 // VerifyCredentials -.
 func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (string, bool, error) {
-	userInfo, err := uc.repo.GetUserInfo(ctx, v)
+	userInfo, err := uc.repo.GetUserCredentials(ctx, v)
 	if err != nil {
 		return "", false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
 	}

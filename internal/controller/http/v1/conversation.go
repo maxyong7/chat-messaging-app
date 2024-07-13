@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
@@ -19,10 +21,11 @@ func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l lo
 
 	h := handler.Group("/conversation")
 	{
-		h.GET("/ws/:clientId", func(c *gin.Context) {
+		h.GET("/ws/:conversationId", route.ServeWsController(hub))
+		// h.GET("/ws/:clientId", func(c *gin.Context) {
 
-			route.t.ServeWs(c, hub)
-		})
+		// 	route.t.ServeWs(c, hub)
+		// })
 		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
 		// 	route.t.ServeWsWithRW(w, r, hub)
 		// })
@@ -33,11 +36,19 @@ func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l lo
 	}
 }
 
-func (r *conversationRoutes) ServeWsController(c *gin.Context) {
-	// hub := usecase.NewHub()
-	// go hub.Run()
+func (r *conversationRoutes) ServeWsController(hub *usecase.Hub) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId, err := getUserIDFromContext(c)
+		if err != nil {
+			errorResponse(c, http.StatusUnauthorized, "unauthorized")
+			return
+		}
 
-	// r.t.ServeWs(c, hub)
+		// hub := usecase.NewHub()
+		// go hub.Run()
+
+		r.t.ServeWs(c, hub, userId)
+	}
 }
 
 // func main() {

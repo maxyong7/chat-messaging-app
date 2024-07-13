@@ -16,6 +16,30 @@ window.onload = function () {
         }
     }
 
+    // Function to get the stored token
+    function getToken() {
+        return sessionStorage.getItem("token");
+    }
+
+    // Function to generate a unique token for each tab
+    function generateUser() {
+
+        min = Math.ceil(1);
+        max = Math.floor(100);
+        result = Math.floor(Math.random() * (max - min + 1)) + min;
+        return 'User ' + result.toString();
+    }
+
+    // Store the token in sessionStorage if not already stored
+    if (!sessionStorage.getItem("user_id")) {
+        sessionStorage.setItem("user_id", generateUser());
+    }
+
+    // Function to get the stored token
+    function getUserId() {
+        return sessionStorage.getItem("user_id");
+    }
+
     document.getElementById("form").onsubmit = function () {
         if (!conn) {
             return false;
@@ -25,11 +49,11 @@ window.onload = function () {
         }
 
         var message = {
-            type: "message",
-            sender: "user1",  // Adjust this as needed
-            recipient: "user2",  // Adjust this as needed
+            // type: "message",
+            sender: getUserId(),  // Adjust this as needed
+            // recipient: "user2",  // Adjust this as needed
             content: msg.value,
-            id: "room1"  // Adjust this as needed
+            conversation_uuid: "room1"  // Adjust this as needed
         };
         
         conn.send(JSON.stringify(message));
@@ -38,7 +62,7 @@ window.onload = function () {
     };
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/room1");
+        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/room1",["access_token", getToken()]);
         conn.onerror = function (evt) {
             console.log("Error message")
             var messages = evt.data.split('\n');
@@ -57,11 +81,9 @@ window.onload = function () {
             console.log("received message");
             try {
                 var message = JSON.parse(evt.data);
-                if (message.type === "message") {
-                    var item = document.createElement("div");
-                    item.innerText = message.sender + ": " + message.content;
-                    appendLog(item);
-                }
+                var item = document.createElement("div");
+                item.innerText = message.sender_first_name + " "+ message.sender_last_name + ": " + message.content;
+                appendLog(item);
             } catch (e) {
                 console.error("Error parsing JSON message:", e);
             }

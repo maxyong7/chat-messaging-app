@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
 const (
@@ -32,48 +33,60 @@ var (
 
 // ConversationUseCase -.
 type ConversationUseCase struct {
-	repo   ConversationRepo
-	webAPI TranslationWebAPI
+	repo     ConversationRepo
+	userRepo UserRepo
+	// webAPI  TranslationWebAPI
 }
 
 // Message struct to hold message data
 type Message struct {
-	Type      string `json:"type"`
-	Sender    string `json:"sender"`
-	Recipient string `json:"recipient"`
-	Content   string `json:"content"`
-	ID        string `json:"id"`
+	MessageUUID      string    `json:"message_uuid, omitempty"`
+	ConversationUUID string    `json:"conversation_uuid"`
+	SenderUUID       string    `json:"sender_uuid"`
+	Content          string    `json:"content"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
+type MessageResponse struct {
+	MessageUUID      string    `json:"message_uuid, omitempty"`
+	ConversationUUID string    `json:"conversation_uuid"`
+	SenderFirstName  string    `json:"sender_first_name"`
+	SenderLastName   string    `json:"sender_last_name"`
+	Content          string    `json:"content"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	send chan Message
-	hub  *Hub
+	ID       string
+	UserInfo *entity.UserInfoDTO
+	Conn     *websocket.Conn
+	send     chan MessageResponse
+	hub      *Hub
+	repo     ConversationRepo
 }
 
 type Hub struct {
 	Clients    map[string]map[*Client]bool
 	Register   chan *Client
 	Unregister chan *Client
-	Broadcast  chan Message
+	Broadcast  chan MessageResponse
 	mu         sync.Mutex
 }
 
 // New -.
-func NewConversation(r ConversationRepo, w TranslationWebAPI) *ConversationUseCase {
+func NewConversation(r ConversationRepo, userRepo UserRepo) *ConversationUseCase {
 	return &ConversationUseCase{
-		repo:   r,
-		webAPI: w,
+		repo:     r,
+		userRepo: userRepo,
 	}
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		Broadcast:  make(chan Message),
+		Clients:    make(map[string]map[*Client]bool),
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Clients:    make(map[string]map[*Client]bool),
+		Broadcast:  make(chan MessageResponse),
 	}
 }
 
@@ -139,32 +152,17 @@ func (h *Hub) RemoveClient(client *Client) {
 }
 
 // function to handle message based on type of message
-func (h *Hub) HandleMessage(message Message) {
+func (h *Hub) HandleMessage(message MessageResponse) {
 	fmt.Println("HandleMessage: ", message)
 	//Check if the message is a type of "message"
-	if message.Type == "message" {
-		clients := h.Clients[message.ID]
-		for client := range clients {
-			select {
-			case client.send <- message:
-			default:
-				close(client.send)
-				delete(h.Clients[message.ID], client)
-			}
-		}
-	}
-
-	//Check if the message is a type of "notification"
-	if message.Type == "notification" {
-		fmt.Println("Notification: ", message.Content)
-		clients := h.Clients[message.Recipient]
-		for client := range clients {
-			select {
-			case client.send <- message:
-			default:
-				close(client.send)
-				delete(h.Clients[message.Recipient], client)
-			}
+	// if message.Type == "message" {
+	clients := h.Clients[message.ConversationUUID]
+	for client := range clients {
+		select {
+		case client.send <- message:
+		default:
+			close(client.send)
+			delete(h.Clients[message.ConversationUUID], client)
 		}
 	}
 
@@ -181,13 +179,19 @@ func (c *Client) readPump() {
 	for {
 		var msg Message
 		err := c.Conn.ReadJSON(&msg)
+		msg.ConversationUUID = c.ID
+		msg.CreatedAt = time.Now()
+
+		msgResponse := c.buildMessageResponse(msg)
 
 		fmt.Println("readPump: ", msg)
 		if err != nil {
 			fmt.Println("Error: ", err)
 			break
 		}
-		c.hub.Broadcast <- msg
+		c.hub.Broadcast <- msgResponse
+		// TODO: ADD database insert
+		// c.repo.GetConversations(
 	}
 }
 
@@ -206,6 +210,7 @@ func (c *Client) writePump() {
 				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			} else {
+
 				err := c.Conn.WriteJSON(message)
 
 				fmt.Println("writePump: ", message)
@@ -223,9 +228,27 @@ func (c *Client) writePump() {
 	}
 }
 
+func (c *Client) buildMessageResponse(message Message) MessageResponse {
+	return MessageResponse{
+		MessageUUID:      message.MessageUUID,
+		ConversationUUID: message.ConversationUUID,
+		SenderFirstName:  c.UserInfo.FirstName,
+		SenderLastName:   c.UserInfo.LastName,
+		Content:          message.Content,
+		CreatedAt:        message.CreatedAt,
+	}
+}
+
 // NewClient creates a new client
-func NewClient(id string, conn *websocket.Conn, hub *Hub) *Client {
-	return &Client{ID: id, Conn: conn, send: make(chan Message, 256), hub: hub}
+func NewClient(id string, userInfo *entity.UserInfoDTO, conn *websocket.Conn, hub *Hub, repo ConversationRepo) *Client {
+	return &Client{
+		ID:       id,
+		UserInfo: userInfo,
+		Conn:     conn,
+		send:     make(chan MessageResponse, 256),
+		hub:      hub,
+		repo:     repo,
+	}
 }
 
 var upgrader = websocket.Upgrader{
@@ -234,7 +257,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
+func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub, userUuid string) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println(err)
@@ -243,9 +266,14 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
 	// clientId := c.Request.URL.Query().Get("clientId")
 	// clientID := "thisIsClientID"
 	// clientID := c.Request.Header.Get("Sec-Websocket-Key")
+	userInfo, err := uc.userRepo.GetUserInfo(c.Request.Context(), userUuid)
+	if err != nil || userInfo == nil {
+		log.Println("ServeWs - GetUserInfo err:", err)
+		return
+	}
 
-	clientId := c.Param("clientId")
-	client := NewClient(clientId, conn, hub)
+	clientId := c.Param("conversationId")
+	client := NewClient(clientId, userInfo, conn, hub, uc.repo)
 	hub.Register <- client
 	// client.Hub.Register <- client
 
@@ -253,21 +281,21 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub) {
 	go client.readPump()
 }
 
-func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Request, hub *Hub) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	// clientID := c.Request.URL.Query().Get("id")
-	clientID := "thisIsClientID"
-	// clientID := r.URL.Query().Get("id")
+// func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Request, hub *Hub) {
+// 	conn, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return
+// 	}
+// 	// clientID := c.Request.URL.Query().Get("id")
+// 	clientID := "thisIsClientID"
+// 	// clientID := r.URL.Query().Get("id")
 
-	client := NewClient(clientID, conn, hub)
-	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
-	// hub.Register <- client
-	client.hub.Register <- client
+// 	client := NewClient(clientID, conn, hub)
+// 	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
+// 	// hub.Register <- client
+// 	client.hub.Register <- client
 
-	go client.writePump()
-	go client.readPump()
-}
+// 	go client.writePump()
+// 	go client.readPump()
+// }
