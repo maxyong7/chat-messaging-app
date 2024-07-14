@@ -59,6 +59,7 @@ type (
 
 	Contact interface {
 		AddContacts(ctx context.Context, contactUserName string, userUuid string) error
+		GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error)
 	}
 
 	ContactsRepo interface {

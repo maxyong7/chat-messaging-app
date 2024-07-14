@@ -27,7 +27,7 @@ func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName stri
 	// Check username exists
 	contactUserUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, contactUserName)
 	if err != nil {
-		return fmt.Errorf("AddContacts - GetUserUUIDByUsername: %w", err)
+		return fmt.Errorf("ContactsUseCase - AddContacts - GetUserUUIDByUsername: %w", err)
 	}
 
 	if contactUserUUID == nil {
@@ -53,9 +53,17 @@ func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName stri
 
 	err = uc.repo.StoreContacts(ctx, contactsDTO)
 	if err != nil {
-		return fmt.Errorf("AddContacts - uc.repo.StoreContacts: %w", err)
+		return fmt.Errorf("ContactsUseCase - AddContacts - uc.repo.StoreContacts: %w", err)
 	}
 	return nil
+}
+
+func (uc *ContactsUseCase) GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error) {
+	contacts, err := uc.repo.GetContactsByUserUUID(ctx, userUuid)
+	if err != nil {
+		return nil, fmt.Errorf("ContactsUseCase - GetContacts - GetContactsByUserUUID: %w", err)
+	}
+	return contacts, nil
 }
 
 // // RegisterUser -.

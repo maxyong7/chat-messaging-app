@@ -20,6 +20,7 @@ func newContactRoute(handler *gin.RouterGroup, t usecase.Contact, l logger.Inter
 	h := handler.Group("/contact")
 	{
 		h.POST("/:username/add", route.addContact)
+		h.GET("", route.getContacts)
 		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
 		// 	route.t.ServeWsWithRW(w, r, hub)
 		// })
@@ -38,12 +39,29 @@ func (r *contactRoute) addContact(c *gin.Context) {
 	}
 
 	contactUserName := c.Param("username")
-	r.t.AddContacts(c.Request.Context(), contactUserName, userId)
+	err = r.t.AddContacts(c.Request.Context(), contactUserName, userId)
 	if err != nil {
-		r.l.Error(err, "http - v1 - getInbox - GetInbox")
+		r.l.Error(err, "http - v1 - addContact - AddContacts")
 		handleCustomErrors(c, err)
 		return
 	}
 
 	c.Writer.WriteHeader(http.StatusCreated)
+}
+
+func (r *contactRoute) getContacts(c *gin.Context) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		errorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	contacts, err := r.t.GetContacts(c.Request.Context(), userId)
+	if err != nil {
+		r.l.Error(err, "http - v1 - getContacts - GetContacts")
+		handleCustomErrors(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, contacts)
 }
