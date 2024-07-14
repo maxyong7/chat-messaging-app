@@ -50,10 +50,10 @@ window.onload = function () {
 
         var message = {
             // type: "message",
-            sender: getUserId(),  // Adjust this as needed
+            // sender: getUserId(),  // Adjust this as needed
             // recipient: "user2",  // Adjust this as needed
             content: msg.value,
-            conversation_uuid: "room1"  // Adjust this as needed
+            // conversation_uuid: ""  // Adjust this as needed
         };
         
         conn.send(JSON.stringify(message));
@@ -62,7 +62,7 @@ window.onload = function () {
     };
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/room1",["access_token", getToken()]);
+        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/8fa53c4d-b273-40db-b839-c5caa211b668",["access_token", getToken()]);
         conn.onerror = function (evt) {
             console.log("Error message")
             var messages = evt.data.split('\n');
