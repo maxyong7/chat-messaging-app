@@ -88,7 +88,7 @@ func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserR
 	return nil
 }
 
-// GetUserCredentials -.
+// CheckUserExist -.
 func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
 	// Check if the user already exists
 	sql, args, err := r.Builder.
@@ -119,7 +119,7 @@ func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.User
 	return false, nil
 }
 
-// GetUserCredentials -.
+// GetUserInfo -.
 func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userUuid string) (*entity.UserInfoDTO, error) {
 	sql := `
 		SELECT user_uuid, first_name, last_name, avatar
@@ -138,4 +138,25 @@ func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userUuid string) (*entit
 	}
 
 	return &userInfoDTO, nil
+}
+
+// GetUserUUIDByUsername -.
+func (r *UserInfoRepo) GetUserUUIDByUsername(ctx context.Context, userName string) (*string, error) {
+	sql := `
+		SELECT user_uuid
+		FROM user_credentials
+		WHERE (username = $1) 
+	`
+
+	var userUUID string
+	err := r.Pool.QueryRow(ctx, sql, userName).
+		Scan(&userUUID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("UserInfoRepo - GetUserCredentials - r.Pool.QueryRow: %w", err)
+	}
+
+	return &userUUID, nil
 }

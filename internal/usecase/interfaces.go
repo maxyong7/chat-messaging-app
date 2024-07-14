@@ -40,6 +40,7 @@ type (
 		StoreUserInfo(context.Context, entity.UserRegistration) error
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
+		GetUserUUIDByUsername(context.Context, string) (*string, error)
 	}
 
 	Conversation interface {
@@ -54,5 +55,15 @@ type (
 
 	Inbox interface {
 		GetInbox(context.Context, entity.RequestParams) (entity.InboxResponse, error)
+	}
+
+	Contact interface {
+		AddContacts(ctx context.Context, contactUserName string, userUuid string) error
+	}
+
+	ContactsRepo interface {
+		GetContactsByUserUUID(ctx context.Context, userUuid string) ([]entity.Contacts, error)
+		CheckContactExist(ctx context.Context, userUuid string, contactUserUuid string) (bool, error)
+		StoreContacts(context.Context, entity.ContactsDTO) error
 	}
 )
