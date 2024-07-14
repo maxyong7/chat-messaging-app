@@ -3,6 +3,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -74,4 +75,31 @@ func (p *Postgres) Close() {
 	if p.Pool != nil {
 		p.Pool.Close()
 	}
+}
+
+func OpenDB(dsn string, poolMax int) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	if poolMax != 0 {
+		fmt.Println("setting limits")
+		db.SetMaxOpenConns(poolMax)
+		db.SetMaxIdleConns(poolMax)
+	} else {
+		fmt.Println("setting default limit")
+		db.SetMaxOpenConns(5)
+		db.SetMaxIdleConns(5)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

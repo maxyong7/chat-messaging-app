@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS contacts (
     user_uuid TEXT,
     contact_user_uuid TEXT,
     conversation_uuid TEXT DEFAULT gen_random_uuid (),
-    blocked BOOLEAN
+    blocked BOOLEAN DEFAULT FALSE,
+    removed BOOLEAN DEFAULT FALSE
 );
 
 
@@ -43,7 +44,7 @@ CREATE TABLE IF NOT EXISTS messages (
     user_uuid TEXT,
     content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted BOOLEAN,
+    deleted BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (message_uuid)
 ); 
 

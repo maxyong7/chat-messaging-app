@@ -2,6 +2,7 @@
 package app
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -24,18 +25,28 @@ func Run(cfg *config.Config) {
 	l := logger.New(cfg.Log.Level)
 
 	// Repository
-	pg, err := postgres.New(cfg.PG.PostgresURL, postgres.MaxPoolSize(cfg.PG.PoolMax))
+	// pg, err := postgres.New(cfg.PG.PostgresURL, postgres.MaxPoolSize(cfg.PG.PoolMax))
+	// if err != nil {
+	// 	l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
+	// }
+	// defer pg.Close()
+	pg, err := postgres.OpenDB(cfg.PG.PostgresURL, cfg.PG.PoolMax)
 	if err != nil {
-		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
+		l.Fatal(fmt.Errorf("app - Run - postgres.OpenDB: %w", err))
 	}
-	defer pg.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			l.Fatal(fmt.Errorf("app - Run - db.Close(): %w", err))
+		}
+	}(pg)
 
 	userInfoRepo := repo.NewUserInfo(pg)
 	// Use case
-	translationUseCase := usecase.New(
-		repo.New(pg),
-		webapi.New(),
-	)
+	// translationUseCase := usecase.New(
+	// 	repo.New(pg),
+	// 	webapi.New(),
+	// )
 	verificationUseCase := usecase.NewAuth(
 		userInfoRepo,
 		webapi.New(),
@@ -46,6 +57,10 @@ func Run(cfg *config.Config) {
 	)
 	inboxUseCase := usecase.NewInbox(
 		repo.NewConversation(pg),
+	)
+	contactUseCase := usecase.NewContacts(
+		repo.NewContacts(pg),
+		userInfoRepo,
 	)
 
 	// // RabbitMQ RPC Server
@@ -59,10 +74,11 @@ func Run(cfg *config.Config) {
 	// HTTP Server
 	handler := gin.New()
 	routerUseCase := v1.RouterUseCases{
-		Translation:  translationUseCase,
+		// Translation:  translationUseCase,
 		Verification: verificationUseCase,
 		Conversation: conversationUseCase,
 		Inbox:        inboxUseCase,
+		Contact:      contactUseCase,
 	}
 	v1.NewRouter(handler, l, routerUseCase)
 

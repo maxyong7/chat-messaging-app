@@ -112,5 +112,5 @@ func (r *webserverRoutes) registerUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, nil)
+	c.Writer.WriteHeader(http.StatusCreated)
 }

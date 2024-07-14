@@ -15,6 +15,10 @@ func handleCustomErrors(c *gin.Context, err error) {
 	switch err {
 	case entity.ErrUserAlreadyExists:
 		errorResponse(c, http.StatusConflict, err.Error())
+	case entity.ErrUserNameNotFound, entity.ErrContactDoesNotExists:
+		errorResponse(c, http.StatusNotFound, err.Error())
+	case entity.ErrContactAlreadyExists:
+		errorResponse(c, http.StatusConflict, err.Error())
 	// Add other custom error cases here
 	default:
 		errorResponse(c, http.StatusInternalServerError, "internal server error")

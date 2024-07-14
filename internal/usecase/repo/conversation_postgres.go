@@ -2,22 +2,22 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"log"
 
-	"github.com/go-pg/pg"
+	"github.com/lib/pq"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
-	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
 )
 
 // ConversationRepo -.
 type ConversationRepo struct {
-	*postgres.Postgres
+	// *postgres.Postgres
+	*sql.DB
 }
 
 // New -.
-func NewConversation(pg *postgres.Postgres) *ConversationRepo {
+func NewConversation(pg *sql.DB) *ConversationRepo {
 	return &ConversationRepo{pg}
 }
 
@@ -38,9 +38,9 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 		FROM combined_conversations
 		`
 
-	rows, err := r.Pool.Query(ctx, query, reqParam.UserID)
+	rows, err := r.QueryContext(ctx, query, reqParam.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("ConversationRepo - GetConversation - r.Pool.Query: %w", err)
+		return nil, fmt.Errorf("ConversationRepo - GetConversation - r.QueryContext: %w", err)
 	}
 	defer rows.Close()
 
@@ -62,27 +62,28 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	}
 
 	finalQuery := `
-		SELECT 
-			c.last_message, 
-			c.last_sent_user_uuid, 
-			c.title, 
-			c.last_message_created_at, 
+		SELECT
+			c.last_message,
+			c.title,
+			c.last_message_created_at,
 			c.conversation_type,
 			ui.first_name,
 			ui.last_name,
 			ui.avatar
 		FROM conversations c
-		WHERE conversation_uuid = IN($1)
-		AND last_message_created_at < $2
-		LEFT JOIN user_info ui ON conversations.last_sent_user_uuid = user_info.user_uuid
-		ORDER BY last_message_created_at DESC
+		LEFT JOIN user_info ui ON c.last_sent_user_uuid = ui.user_uuid
+		WHERE c.conversation_uuid = ANY($1)
+		AND c.last_message IS NOT NULL			
+		AND c.last_message_created_at < $2
+		ORDER BY c.last_message_created_at DESC
 		LIMIT $3;
 	`
 
 	// Execute the final query.
-	rows, err = r.Pool.Query(ctx, finalQuery, pg.In(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
+	rows, err = r.QueryContext(ctx, finalQuery, pq.Array(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("GetConversations - finalQuery err: ", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -92,7 +93,6 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 		var conv entity.Conversations
 		if err := rows.Scan(
 			&conv.LastMessage,
-			&conv.LastSentUser,
 			&conv.Title,
 			&conv.LastMessageCreatedAt,
 			&conv.Type,
@@ -100,12 +100,13 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 			&conv.LastSentUser.LastName,
 			&conv.LastSentUser.Avatar,
 		); err != nil {
-			log.Fatal(err)
+			fmt.Println("GetConversations - rows.Scan err: ", err)
+			return nil, err
 		}
 		conversations = append(conversations, conv)
 	}
 	if err := rows.Err(); err != nil {
-		log.Fatal(err)
+		fmt.Println("GetConversations - rows.Err(): ", err)
 	}
 
 	return conversations, nil
@@ -115,7 +116,7 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 	ctx := context.Background()
 	// Begin a transaction
-	tx, err := r.Pool.Begin(ctx)
+	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to begin transaction: %w", err)
 	}
@@ -123,10 +124,10 @@ func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 	// Ensure transaction is rolled back if it doesn't commit
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback(ctx)
+			tx.Rollback()
 			panic(p) // Re-throw panic after rollback
 		} else if err != nil {
-			tx.Rollback(ctx) // err is non-nil; rollback
+			tx.Rollback() // err is non-nil; rollback
 		}
 	}()
 
@@ -134,7 +135,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 		INSERT INTO messages (message_uuid, conversation_uuid, user_uuid, content, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		`
-	_, err = tx.Exec(ctx, insertMessagesSQL, msg.MessageUUID, msg.ConversationUUID, msg.SenderUUID, msg.Content, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.MessageUUID, msg.ConversationUUID, msg.SenderUUID, msg.Content, msg.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}
@@ -153,13 +154,13 @@ func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 		title = EXCLUDED.title,
 		last_message_created_at = EXCLUDED.last_message_created_at
 	`
-	_, err = tx.Exec(ctx, upsertConversationsSQL, msg.ConversationUUID, msg.Content, msg.SenderUUID, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, upsertConversationsSQL, msg.ConversationUUID, msg.Content, msg.SenderUUID, msg.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertConversationsSQL query: %w", err)
 	}
 
 	// Commit the transaction
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("ConversationRepo - StoreConversation - failed to commit transaction: %w", err)
 	}

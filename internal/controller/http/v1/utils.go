@@ -37,8 +37,8 @@ func queryParamInt(c *gin.Context, name string, defaultvalue int) int {
 }
 
 func queryParamCursor(c *gin.Context) (time.Time, error) {
-	cursor := c.Param("cursor")
-	if cursor == "" {
+	cursor, ok := c.GetQuery("cursor")
+	if !ok || cursor == "" {
 		return time.Now(), nil
 	}
 

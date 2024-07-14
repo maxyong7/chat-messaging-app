@@ -30,3 +30,9 @@ type UserInfoDTO struct {
 	LastName  string `json:"last_name"  example:"last_name"`
 	Avatar    string `json:"avatar,omitempty"  example:"avatar"`
 }
+
+type UserInfo struct {
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
+	Avatar    *string `json:"avatar"`
+}

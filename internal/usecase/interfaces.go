@@ -19,8 +19,8 @@ type (
 
 	// TranslationRepo -.
 	TranslationRepo interface {
-		Store(context.Context, entity.Translation) error
-		GetHistory(context.Context) ([]entity.Translation, error)
+		// Store(context.Context, entity.Translation) error
+		// GetHistory(context.Context) ([]entity.Translation, error)
 	}
 
 	// TranslationWebAPI -.
@@ -40,6 +40,7 @@ type (
 		StoreUserInfo(context.Context, entity.UserRegistration) error
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
+		GetUserUUIDByUsername(context.Context, string) (*string, error)
 	}
 
 	Conversation interface {
@@ -54,5 +55,20 @@ type (
 
 	Inbox interface {
 		GetInbox(context.Context, entity.RequestParams) (entity.InboxResponse, error)
+	}
+
+	Contact interface {
+		GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error)
+		AddContact(ctx context.Context, contactUserName string, userUuid string) error
+		RemoveContact(ctx context.Context, contactUserName string, userUuid string) error
+		UpdateBlockContact(ctx context.Context, contactUserName string, userUuid string, block bool) error
+	}
+
+	ContactsRepo interface {
+		GetContactsByUserUUID(ctx context.Context, userUuid string) ([]entity.Contacts, error)
+		CheckContactExist(ctx context.Context, userUuid string, contactUserUuid string) (bool, error)
+		StoreContacts(context.Context, entity.ContactsDTO) error
+		UpdateRemoved(context.Context, entity.ContactsDTO) error
+		UpdateBlocked(context.Context, entity.ContactsDTO) error
 	}
 )
