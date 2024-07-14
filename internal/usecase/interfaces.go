@@ -61,6 +61,7 @@ type (
 		GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error)
 		AddContact(ctx context.Context, contactUserName string, userUuid string) error
 		RemoveContact(ctx context.Context, contactUserName string, userUuid string) error
+		UpdateBlockContact(ctx context.Context, contactUserName string, userUuid string, block bool) error
 	}
 
 	ContactsRepo interface {
@@ -68,5 +69,6 @@ type (
 		CheckContactExist(ctx context.Context, userUuid string, contactUserUuid string) (bool, error)
 		StoreContacts(context.Context, entity.ContactsDTO) error
 		UpdateRemoved(context.Context, entity.ContactsDTO) error
+		UpdateBlocked(context.Context, entity.ContactsDTO) error
 	}
 )

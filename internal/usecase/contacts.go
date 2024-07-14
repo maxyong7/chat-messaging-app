@@ -107,3 +107,38 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 	}
 	return nil
 }
+
+func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserName string, userUuid string, block bool) error {
+	// Check username exists
+	contactUserUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, contactUserName)
+	if err != nil {
+		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - GetUserUUIDByUsername: %w", err)
+	}
+
+	if contactUserUUID == nil {
+		return entity.ErrUserNameNotFound
+	}
+
+	// Check if already in contacts
+	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return entity.ErrContactDoesNotExists
+	}
+
+	//Store contacts
+	contactsDTO := entity.ContactsDTO{
+		UserUUID:        userUuid,
+		ContactUserUUID: *contactUserUUID,
+		Blocked:         block,
+	}
+
+	err = uc.repo.UpdateBlocked(ctx, contactsDTO)
+	if err != nil {
+		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - uc.repo.UpdateBlocked: %w", err)
+	}
+	return nil
+}

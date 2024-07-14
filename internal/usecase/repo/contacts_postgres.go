@@ -66,7 +66,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 	for rows.Next() {
 		var contact entity.Contacts
 		if err := rows.Scan(&contact.FirstName, &contact.LastName, &contact.Avatar, &contact.ConversationUUID, &contact.Blocked); err != nil {
-			return nil, fmt.Errorf("ConversationRepo - GetConversation - rows.Scan: %w", err)
+			return nil, fmt.Errorf("ContactsRepo - GetContactsByUserUUID - rows.Scan: %w", err)
 		}
 		contacts = append(contacts, contact)
 	}
@@ -128,12 +128,12 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 	return nil
 }
 
-// RemoveContact -.
-func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.ContactsDTO) error {
+// UpdateBlocked -.
+func (r *ContactsRepo) UpdateBlocked(ctx context.Context, contacts entity.ContactsDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - RemoveContact - failed to begin transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateBlocked - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -146,21 +146,59 @@ func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.Contac
 		}
 	}()
 
-	removeContactSQL := `
+	updateBlockedSQL := `
 		UPDATE contacts 
-		SET removed = $1
+		SET blocked = $1
 		WHERE user_uuid = $2
 		AND contact_user_uuid = $3
 		`
-	_, err = tx.ExecContext(ctx, removeContactSQL, contacts.Removed, contacts.UserUUID, contacts.ContactUserUUID)
+	_, err = tx.ExecContext(ctx, updateBlockedSQL, contacts.Blocked, contacts.UserUUID, contacts.ContactUserUUID)
 	if err != nil {
-		return fmt.Errorf("failed to execute insert removeContactSQL query: %w", err)
+		return fmt.Errorf("failed to execute insert updateBlockedSQL query: %w", err)
 	}
 
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - RemoveContact - failed to commit transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateBlocked - failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateRemoved -.
+func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.ContactsDTO) error {
+	// Begin a transaction
+	tx, err := r.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("ContactsRepo - UpdateRemoved - failed to begin transaction: %w", err)
+	}
+
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; rollback
+		}
+	}()
+
+	updateRemovedSQL := `
+		UPDATE contacts 
+		SET removed = $1
+		WHERE user_uuid = $2
+		AND contact_user_uuid = $3
+		`
+	_, err = tx.ExecContext(ctx, updateRemovedSQL, contacts.Removed, contacts.UserUUID, contacts.ContactUserUUID)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert updateRemovedSQL query: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("ContactsRepo - UpdateRemoved - failed to commit transaction: %w", err)
 	}
 
 	return nil
