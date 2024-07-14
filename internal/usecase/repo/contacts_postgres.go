@@ -136,13 +136,13 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 		SELECT 
 			ui.first_name,
 			ui.last_name,
-			ui.avatar
-			ct.conversation_uuid 
+			ui.avatar,
+			ct.conversation_uuid,
 			ct.blocked
 		FROM contacts ct
-		WHERE (user_uuid = $1)
 		LEFT JOIN user_info ui ON ct.contact_user_uuid = ui.user_uuid
-		ORDER BY ui first_name
+		WHERE ct.user_uuid = $1
+		ORDER BY ui.first_name;
 		`
 
 	rows, err := r.Pool.Query(ctx, query, userUuid)
@@ -181,10 +181,10 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 	}()
 
 	insertMessagesSQL := `
-		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid)
-		VALUES ($1, $2, $3)
+		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid, blocked)
+		VALUES ($1, $2, $3, $4)
 		`
-	_, err = tx.Exec(ctx, insertMessagesSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID)
+	_, err = tx.Exec(ctx, insertMessagesSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID, contacts.Blocked)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}

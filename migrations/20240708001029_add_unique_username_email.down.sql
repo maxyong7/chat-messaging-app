@@ -1,2 +1,2 @@
-ALTER TABLE IF EXISTS  users
-REMOVE CONSTRAINT unique_email_username UNIQUE (email, username);
+ALTER TABLE IF EXISTS users
+DROP CONSTRAINT IF EXISTS unique_email_username;
