@@ -2,20 +2,20 @@ package repo
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
 )
 
 // ContactsRepo -.
 type ContactsRepo struct {
-	*postgres.Postgres
+	// *postgres.Postgres
+	*sql.DB
 }
 
 // New -.
-func NewContacts(pg *postgres.Postgres) *ContactsRepo {
+func NewContacts(pg *sql.DB) *ContactsRepo {
 	return &ContactsRepo{pg}
 }
 
@@ -36,9 +36,9 @@ func NewContacts(pg *postgres.Postgres) *ContactsRepo {
 // 		FROM combined_conversations
 // 		`
 
-// 	rows, err := r.Pool.Query(ctx, query, reqParam.UserID)
+// 	rows, err := r.QueryContext(ctx, query, reqParam.UserID)
 // 	if err != nil {
-// 		return nil, fmt.Errorf("ContactsRepo - GetConversation - r.Pool.Query: %w", err)
+// 		return nil, fmt.Errorf("ContactsRepo - GetConversation - r.QueryContext: %w", err)
 // 	}
 // 	defer rows.Close()
 
@@ -78,7 +78,7 @@ func NewContacts(pg *postgres.Postgres) *ContactsRepo {
 // 	`
 
 // 	// Execute the final query.
-// 	rows, err = r.Pool.Query(ctx, finalQuery, pg.In(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
+// 	rows, err = r.QueryContext(ctx, finalQuery, pg.In(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
 // 	if err != nil {
 // 		log.Fatal(err)
 // 	}
@@ -117,9 +117,9 @@ func (r *ContactsRepo) CheckContactExist(ctx context.Context, userUuid string, c
 		`
 
 	var exists int
-	err := r.Pool.QueryRow(ctx, query, userUuid, contactUserUuid).Scan(&exists)
-	if err != nil && err != pgx.ErrNoRows {
-		return false, fmt.Errorf("UserInfoRepo - CheckUserExist -  r.Pool.QueryRow: %w", err)
+	err := r.QueryRowContext(ctx, query, userUuid, contactUserUuid).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return false, fmt.Errorf("UserInfoRepo - CheckUserExist -  r.QueryRowContext: %w", err)
 	}
 
 	if exists > 0 {
@@ -145,9 +145,9 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 		ORDER BY ui.first_name;
 		`
 
-	rows, err := r.Pool.Query(ctx, query, userUuid)
+	rows, err := r.QueryContext(ctx, query, userUuid)
 	if err != nil {
-		return nil, fmt.Errorf("ContactsRepo - GetContactsByUserUUID - r.Pool.Query: %w", err)
+		return nil, fmt.Errorf("ContactsRepo - GetContactsByUserUUID - r.QueryContext: %w", err)
 	}
 	defer rows.Close()
 	// Collect the conversation UUIDs.
@@ -165,7 +165,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 // StoreConversation -.
 func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.ContactsDTO) error {
 	// Begin a transaction
-	tx, err := r.Pool.Begin(ctx)
+	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("ContactsRepo - StoreContacts - failed to begin transaction: %w", err)
 	}
@@ -173,10 +173,10 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 	// Ensure transaction is rolled back if it doesn't commit
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback(ctx)
+			tx.Rollback()
 			panic(p) // Re-throw panic after rollback
 		} else if err != nil {
-			tx.Rollback(ctx) // err is non-nil; rollback
+			tx.Rollback() // err is non-nil; rollback
 		}
 	}()
 
@@ -184,9 +184,18 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid, blocked)
 		VALUES ($1, $2, $3, $4)
 		`
-	_, err = tx.Exec(ctx, insertMessagesSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID, contacts.Blocked)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID, contacts.Blocked)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
+	}
+
+	insertMessagesAsContactSQL := `
+		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid, blocked)
+		VALUES ($1, $2, $3, $4)
+		`
+	_, err = tx.ExecContext(ctx, insertMessagesAsContactSQL, contacts.ContactUserUUID, contacts.UserUUID, contacts.ConversationUUID, contacts.Blocked)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert insertMessagesAsContactSQL query: %w", err)
 	}
 
 	insertConversationsSQL := `
@@ -194,13 +203,13 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 		conversation_uuid
 	) VALUES ($1)
 	`
-	_, err = tx.Exec(ctx, insertConversationsSQL, contacts.ConversationUUID)
+	_, err = tx.ExecContext(ctx, insertConversationsSQL, contacts.ConversationUUID)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertConversationsSQL query: %w", err)
 	}
 
 	// Commit the transaction
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("ContactsRepo - StoreConversation - failed to commit transaction: %w", err)
 	}

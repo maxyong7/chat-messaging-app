@@ -1,126 +1,114 @@
 package usecase_test
 
-import (
-	"context"
-	"errors"
-	"testing"
+// var errInternalServErr = errors.New("internal server error")
 
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
+// type test struct {
+// 	name string
+// 	mock func()
+// 	res  interface{}
+// 	err  error
+// }
 
-	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase"
-)
+// func translation(t *testing.T) (*usecase.TranslationUseCase, *MockTranslationRepo, *MockTranslationWebAPI) {
+// 	t.Helper()
 
-var errInternalServErr = errors.New("internal server error")
+// 	mockCtl := gomock.NewController(t)
+// 	defer mockCtl.Finish()
 
-type test struct {
-	name string
-	mock func()
-	res  interface{}
-	err  error
-}
+// 	repo := NewMockTranslationRepo(mockCtl)
+// 	webAPI := NewMockTranslationWebAPI(mockCtl)
 
-func translation(t *testing.T) (*usecase.TranslationUseCase, *MockTranslationRepo, *MockTranslationWebAPI) {
-	t.Helper()
+// 	translation := usecase.New(repo, webAPI)
 
-	mockCtl := gomock.NewController(t)
-	defer mockCtl.Finish()
+// 	return translation, repo, webAPI
+// }
 
-	repo := NewMockTranslationRepo(mockCtl)
-	webAPI := NewMockTranslationWebAPI(mockCtl)
+// func TestHistory(t *testing.T) {
+// 	t.Parallel()
 
-	translation := usecase.New(repo, webAPI)
+// 	translation, repo, _ := translation(t)
 
-	return translation, repo, webAPI
-}
+// 	tests := []test{
+// 		{
+// 			name: "empty result",
+// 			mock: func() {
+// 				repo.EXPECT().GetHistory(context.Background()).Return(nil, nil)
+// 			},
+// 			res: []entity.Translation(nil),
+// 			err: nil,
+// 		},
+// 		{
+// 			name: "result with error",
+// 			mock: func() {
+// 				repo.EXPECT().GetHistory(context.Background()).Return(nil, errInternalServErr)
+// 			},
+// 			res: []entity.Translation(nil),
+// 			err: errInternalServErr,
+// 		},
+// 	}
 
-func TestHistory(t *testing.T) {
-	t.Parallel()
+// 	for _, tc := range tests {
+// 		tc := tc
 
-	translation, repo, _ := translation(t)
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			t.Parallel()
 
-	tests := []test{
-		{
-			name: "empty result",
-			mock: func() {
-				repo.EXPECT().GetHistory(context.Background()).Return(nil, nil)
-			},
-			res: []entity.Translation(nil),
-			err: nil,
-		},
-		{
-			name: "result with error",
-			mock: func() {
-				repo.EXPECT().GetHistory(context.Background()).Return(nil, errInternalServErr)
-			},
-			res: []entity.Translation(nil),
-			err: errInternalServErr,
-		},
-	}
+// 			tc.mock()
 
-	for _, tc := range tests {
-		tc := tc
+// 			res, err := translation.History(context.Background())
 
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+// 			require.Equal(t, res, tc.res)
+// 			require.ErrorIs(t, err, tc.err)
+// 		})
+// 	}
+// }
 
-			tc.mock()
+// func TestTranslate(t *testing.T) {
+// 	t.Parallel()
 
-			res, err := translation.History(context.Background())
+// 	translation, repo, webAPI := translation(t)
 
-			require.Equal(t, res, tc.res)
-			require.ErrorIs(t, err, tc.err)
-		})
-	}
-}
+// 	tests := []test{
+// 		{
+// 			name: "empty result",
+// 			mock: func() {
+// 				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, nil)
+// 				repo.EXPECT().Store(context.Background(), entity.Translation{}).Return(nil)
+// 			},
+// 			res: entity.Translation{},
+// 			err: nil,
+// 		},
+// 		{
+// 			name: "web API error",
+// 			mock: func() {
+// 				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, errInternalServErr)
+// 			},
+// 			res: entity.Translation{},
+// 			err: errInternalServErr,
+// 		},
+// 		{
+// 			name: "repo error",
+// 			mock: func() {
+// 				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, nil)
+// 				repo.EXPECT().Store(context.Background(), entity.Translation{}).Return(errInternalServErr)
+// 			},
+// 			res: entity.Translation{},
+// 			err: errInternalServErr,
+// 		},
+// 	}
 
-func TestTranslate(t *testing.T) {
-	t.Parallel()
+// 	for _, tc := range tests {
+// 		tc := tc
 
-	translation, repo, webAPI := translation(t)
+// 		t.Run(tc.name, func(t *testing.T) {
+// 			t.Parallel()
 
-	tests := []test{
-		{
-			name: "empty result",
-			mock: func() {
-				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, nil)
-				repo.EXPECT().Store(context.Background(), entity.Translation{}).Return(nil)
-			},
-			res: entity.Translation{},
-			err: nil,
-		},
-		{
-			name: "web API error",
-			mock: func() {
-				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, errInternalServErr)
-			},
-			res: entity.Translation{},
-			err: errInternalServErr,
-		},
-		{
-			name: "repo error",
-			mock: func() {
-				webAPI.EXPECT().Translate(entity.Translation{}).Return(entity.Translation{}, nil)
-				repo.EXPECT().Store(context.Background(), entity.Translation{}).Return(errInternalServErr)
-			},
-			res: entity.Translation{},
-			err: errInternalServErr,
-		},
-	}
+// 			tc.mock()
 
-	for _, tc := range tests {
-		tc := tc
+// 			res, err := translation.Translate(context.Background(), entity.Translation{})
 
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			tc.mock()
-
-			res, err := translation.Translate(context.Background(), entity.Translation{})
-
-			require.EqualValues(t, res, tc.res)
-			require.ErrorIs(t, err, tc.err)
-		})
-	}
-}
+// 			require.EqualValues(t, res, tc.res)
+// 			require.ErrorIs(t, err, tc.err)
+// 		})
+// 	}
+// }
