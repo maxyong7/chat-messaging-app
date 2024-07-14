@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/go-pg/pg"
+	"github.com/lib/pq"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
@@ -62,27 +62,28 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	}
 
 	finalQuery := `
-		SELECT 
-			c.last_message, 
-			c.last_sent_user_uuid, 
-			c.title, 
-			c.last_message_created_at, 
+		SELECT
+			c.last_message,
+			c.last_sent_user_uuid,
+			c.title,
+			c.last_message_created_at,
 			c.conversation_type,
 			ui.first_name,
 			ui.last_name,
 			ui.avatar
 		FROM conversations c
-		WHERE conversation_uuid = IN($1)
+		LEFT JOIN user_info ui ON c.last_sent_user_uuid = ui.user_uuid
+		WHERE conversation_uuid IN($1)
 		AND last_message_created_at < $2
-		LEFT JOIN user_info ui ON conversations.last_sent_user_uuid = user_info.user_uuid
 		ORDER BY last_message_created_at DESC
 		LIMIT $3;
 	`
 
 	// Execute the final query.
-	rows, err = r.Pool.Query(ctx, finalQuery, pg.In(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
+	rows, err = r.Pool.Query(ctx, finalQuery, pq.Array(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("GetConversations - finalQuery err: ", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -100,7 +101,8 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 			&conv.LastSentUser.LastName,
 			&conv.LastSentUser.Avatar,
 		); err != nil {
-			log.Fatal(err)
+			fmt.Println("GetConversations - rows.Scan err: ", err)
+			return nil, err
 		}
 		conversations = append(conversations, conv)
 	}
