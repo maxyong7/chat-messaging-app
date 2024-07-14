@@ -19,96 +19,6 @@ func NewContacts(pg *sql.DB) *ContactsRepo {
 	return &ContactsRepo{pg}
 }
 
-// // GetUserInfo -.
-// func (r *ContactsRepo) GetConversations(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
-// 	// Define the SQL query.
-// 	query := `
-// 		WITH combined_conversations AS (
-// 			SELECT conversation_uuid
-// 			FROM contacts
-// 			WHERE user_uuid = $1
-// 			UNION
-// 			SELECT conversation_uuid
-// 			FROM participants
-// 			WHERE user_uuid = $1
-// 		)
-// 		SELECT conversation_uuid
-// 		FROM combined_conversations
-// 		`
-
-// 	rows, err := r.QueryContext(ctx, query, reqParam.UserID)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("ContactsRepo - GetConversation - r.QueryContext: %w", err)
-// 	}
-// 	defer rows.Close()
-
-// 	// Collect the conversation UUIDs.
-// 	var conversationUUIDs []string
-// 	for rows.Next() {
-// 		var conversationUUID string
-// 		if err := rows.Scan(&conversationUUID); err != nil {
-// 			return nil, fmt.Errorf("ContactsRepo - GetConversation - rows.Scan: %w", err)
-// 		}
-// 		conversationUUIDs = append(conversationUUIDs, conversationUUID)
-// 	}
-
-// 	// If there are no conversation UUIDs, return early.
-// 	if len(conversationUUIDs) == 0 {
-// 		fmt.Println("No conversations found.")
-// 		// return nil, entity.ErrNoConversationFound
-// 		return nil, nil
-// 	}
-
-// 	finalQuery := `
-// 		SELECT
-// 			c.last_message,
-// 			c.last_sent_user_uuid,
-// 			c.title,
-// 			c.last_message_created_at,
-// 			c.conversation_type,
-// 			ui.first_name,
-// 			ui.last_name,
-// 			ui.avatar
-// 		FROM conversations c
-// 		WHERE conversation_uuid = IN($1)
-// 		AND last_message_created_at < $2
-// 		LEFT JOIN user_info ui ON conversations.last_sent_user_uuid = user_info.user_uuid
-// 		ORDER BY last_message_created_at DESC
-// 		LIMIT $3;
-// 	`
-
-// 	// Execute the final query.
-// 	rows, err = r.QueryContext(ctx, finalQuery, pg.In(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer rows.Close()
-
-// 	// Process the results.
-// 	var conversations []entity.Conversations
-// 	for rows.Next() {
-// 		var conv entity.Conversations
-// 		if err := rows.Scan(
-// 			&conv.LastMessage,
-// 			&conv.LastSentUser,
-// 			&conv.Title,
-// 			&conv.LastMessageCreatedAt,
-// 			&conv.Type,
-// 			&conv.LastSentUser.FirstName,
-// 			&conv.LastSentUser.LastName,
-// 			&conv.LastSentUser.Avatar,
-// 		); err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		conversations = append(conversations, conv)
-// 	}
-// 	if err := rows.Err(); err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	return conversations, nil
-// }
-
 func (r *ContactsRepo) CheckContactExist(ctx context.Context, userUuid string, contactUserUuid string) (bool, error) {
 	// Define the SQL query.
 	query := `
@@ -142,6 +52,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 		FROM contacts ct
 		LEFT JOIN user_info ui ON ct.contact_user_uuid = ui.user_uuid
 		WHERE ct.user_uuid = $1
+		AND ct.removed != true
 		ORDER BY ui.first_name;
 		`
 
@@ -162,7 +73,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 	return contacts, nil
 }
 
-// StoreConversation -.
+// StoreContacts -.
 func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.ContactsDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
@@ -180,22 +91,22 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 		}
 	}()
 
-	insertMessagesSQL := `
+	insertContactAsUserSQL := `
 		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid, blocked)
 		VALUES ($1, $2, $3, $4)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID, contacts.Blocked)
+	_, err = tx.ExecContext(ctx, insertContactAsUserSQL, contacts.UserUUID, contacts.ContactUserUUID, contacts.ConversationUUID, contacts.Blocked)
 	if err != nil {
-		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
+		return fmt.Errorf("failed to execute insert insertContactAsUserSQL query: %w", err)
 	}
 
-	insertMessagesAsContactSQL := `
+	insertContactAsContactSQL := `
 		INSERT INTO contacts (user_uuid, contact_user_uuid, conversation_uuid, blocked)
 		VALUES ($1, $2, $3, $4)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesAsContactSQL, contacts.ContactUserUUID, contacts.UserUUID, contacts.ConversationUUID, contacts.Blocked)
+	_, err = tx.ExecContext(ctx, insertContactAsContactSQL, contacts.ContactUserUUID, contacts.UserUUID, contacts.ConversationUUID, contacts.Blocked)
 	if err != nil {
-		return fmt.Errorf("failed to execute insert insertMessagesAsContactSQL query: %w", err)
+		return fmt.Errorf("failed to execute insert insertContactAsContactSQL query: %w", err)
 	}
 
 	insertConversationsSQL := `
@@ -211,7 +122,45 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - StoreConversation - failed to commit transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - StoreContacts - failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// RemoveContact -.
+func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.ContactsDTO) error {
+	// Begin a transaction
+	tx, err := r.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("ContactsRepo - RemoveContact - failed to begin transaction: %w", err)
+	}
+
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; rollback
+		}
+	}()
+
+	removeContactSQL := `
+		UPDATE contacts 
+		SET removed = $1
+		WHERE user_uuid = $2
+		AND contact_user_uuid = $3
+		`
+	_, err = tx.ExecContext(ctx, removeContactSQL, contacts.Removed, contacts.UserUUID, contacts.ContactUserUUID)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert removeContactSQL query: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("ContactsRepo - RemoveContact - failed to commit transaction: %w", err)
 	}
 
 	return nil

@@ -22,8 +22,15 @@ func NewContacts(r ContactsRepo, userInfoRepo UserRepo) *ContactsUseCase {
 	}
 }
 
-// VerifyCredentials -.
-func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName string, userUuid string) error {
+func (uc *ContactsUseCase) GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error) {
+	contacts, err := uc.repo.GetContactsByUserUUID(ctx, userUuid)
+	if err != nil {
+		return nil, fmt.Errorf("ContactsUseCase - GetContacts - GetContactsByUserUUID: %w", err)
+	}
+	return contacts, nil
+}
+
+func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName string, userUuid string) error {
 	// Check username exists
 	contactUserUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, contactUserName)
 	if err != nil {
@@ -41,7 +48,16 @@ func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName stri
 	}
 
 	if exist {
-		return entity.ErrUserAlreadyExists
+		err := uc.repo.UpdateRemoved(ctx, entity.ContactsDTO{
+			UserUUID:        userUuid,
+			ContactUserUUID: *contactUserUUID,
+			Removed:         false,
+		})
+
+		if err != nil {
+			return fmt.Errorf("ContactsUseCase - AddContacts - uc.repo.UpdateRemoved: %w", err)
+		}
+		return nil
 	}
 
 	//Store contacts
@@ -50,7 +66,6 @@ func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName stri
 		ContactUserUUID:  *contactUserUUID,
 		ConversationUUID: uuid.New().String(),
 	}
-
 	err = uc.repo.StoreContacts(ctx, contactsDTO)
 	if err != nil {
 		return fmt.Errorf("ContactsUseCase - AddContacts - uc.repo.StoreContacts: %w", err)
@@ -58,28 +73,37 @@ func (uc *ContactsUseCase) AddContacts(ctx context.Context, contactUserName stri
 	return nil
 }
 
-func (uc *ContactsUseCase) GetContacts(ctx context.Context, userUuid string) ([]entity.Contacts, error) {
-	contacts, err := uc.repo.GetContactsByUserUUID(ctx, userUuid)
+func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName string, userUuid string) error {
+	// Check username exists
+	contactUserUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, contactUserName)
 	if err != nil {
-		return nil, fmt.Errorf("ContactsUseCase - GetContacts - GetContactsByUserUUID: %w", err)
+		return fmt.Errorf("ContactsUseCase - AddContacts - GetUserUUIDByUsername: %w", err)
 	}
-	return contacts, nil
+
+	if contactUserUUID == nil {
+		return entity.ErrUserNameNotFound
+	}
+
+	// Check if already in contacts
+	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return entity.ErrContactDoesNotExists
+	}
+
+	//Store contacts
+	contactsDTO := entity.ContactsDTO{
+		UserUUID:        userUuid,
+		ContactUserUUID: *contactUserUUID,
+		Removed:         true,
+	}
+
+	err = uc.repo.UpdateRemoved(ctx, contactsDTO)
+	if err != nil {
+		return fmt.Errorf("ContactsUseCase - AddContacts - uc.repo.StoreContacts: %w", err)
+	}
+	return nil
 }
-
-// // RegisterUser -.
-// func (uc *ContactsUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
-// 	exist, err := uc.repo.CheckUserExist(ctx, userRegistration)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if exist {
-// 		return entity.ErrUserAlreadyExists
-// 	}
-
-// 	err = uc.repo.StoreUserInfo(context.Background(), userRegistration)
-// 	if err != nil {
-// 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)
-// 	}
-// 	return nil
-// }

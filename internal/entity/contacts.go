@@ -11,4 +11,5 @@ type ContactsDTO struct {
 	ContactUserUUID  string `json:"contact_user_uuid"`
 	ConversationUUID string `json:"conversation_uuid"`
 	Blocked          bool   `json:"blocked"`
+	Removed          bool   `json:"removed"`
 }

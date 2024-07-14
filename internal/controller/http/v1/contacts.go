@@ -19,34 +19,10 @@ func newContactRoute(handler *gin.RouterGroup, t usecase.Contact, l logger.Inter
 
 	h := handler.Group("/contact")
 	{
-		h.POST("/:username/add", route.addContact)
 		h.GET("", route.getContacts)
-		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
-		// 	route.t.ServeWsWithRW(w, r, hub)
-		// })
-		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
-		// 	route.t.ServeWsWithRW(w, r, hub)
-		// })
-		// h.GET("/ws", route.ServeWsController)
+		h.POST("/:username/add", route.addContact)
+		h.POST("/:username/remove", route.removeContact)
 	}
-}
-
-func (r *contactRoute) addContact(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
-	if err != nil {
-		errorResponse(c, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	contactUserName := c.Param("username")
-	err = r.t.AddContacts(c.Request.Context(), contactUserName, userId)
-	if err != nil {
-		r.l.Error(err, "http - v1 - addContact - AddContacts")
-		handleCustomErrors(c, err)
-		return
-	}
-
-	c.Writer.WriteHeader(http.StatusCreated)
 }
 
 func (r *contactRoute) getContacts(c *gin.Context) {
@@ -64,4 +40,40 @@ func (r *contactRoute) getContacts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, contacts)
+}
+
+func (r *contactRoute) addContact(c *gin.Context) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		errorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	contactUserName := c.Param("username")
+	err = r.t.AddContact(c.Request.Context(), contactUserName, userId)
+	if err != nil {
+		r.l.Error(err, "http - v1 - addContact - AddContacts")
+		handleCustomErrors(c, err)
+		return
+	}
+
+	c.Writer.WriteHeader(http.StatusCreated)
+}
+
+func (r *contactRoute) removeContact(c *gin.Context) {
+	userId, err := getUserIDFromContext(c)
+	if err != nil {
+		errorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	contactUserName := c.Param("username")
+	err = r.t.RemoveContact(c.Request.Context(), contactUserName, userId)
+	if err != nil {
+		r.l.Error(err, "http - v1 - addContact - AddContacts")
+		handleCustomErrors(c, err)
+		return
+	}
+
+	c.Writer.WriteHeader(http.StatusNoContent)
 }
