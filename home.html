@@ -47,12 +47,35 @@ window.onload = function () {
         if (!msg.value) {
             return false;
         }
-
+        // // Send message
+        // var message = {
+        //     message_type: "message",
+        //     // sender: getUserId(),  // Adjust this as needed
+        //     // recipient: "user2",  // Adjust this as needed
+        //     data: {
+        //         content: msg.value
+        //     },
+        //     // conversation_uuid: ""  // Adjust this as needed
+        // };
+        // // Remove Reaction
+        // var message = {
+        //     message_type: "remove_reaction",
+        //     // sender: getUserId(),  // Adjust this as needed
+        //     // recipient: "user2",  // Adjust this as needed
+        //     data: {
+        //         message_uuid: "4a1d8009-a876-4466-8b57-b0f32335df04",
+        //         reaction_type: "sad"
+        //     },
+        //     // conversation_uuid: ""  // Adjust this as needed
+        // };
+        // Delete Message
         var message = {
-            // type: "message",
+            message_type: "delete_message",
             // sender: getUserId(),  // Adjust this as needed
             // recipient: "user2",  // Adjust this as needed
-            content: msg.value,
+            data: {
+                message_uuid: "5e9beb8e-9748-46a4-ac32-bbad4003eea9",
+            },
             // conversation_uuid: ""  // Adjust this as needed
         };
         
@@ -81,9 +104,16 @@ window.onload = function () {
             console.log("received message");
             try {
                 var message = JSON.parse(evt.data);
-                var item = document.createElement("div");
-                item.innerText = message.sender_first_name + " "+ message.sender_last_name + ": " + message.content;
-                appendLog(item);
+                if (message.message_type == "message"){
+                    var item = document.createElement("div");
+                    item.innerText = message.data.sender_first_name + " "+ message.data.sender_last_name + ": " + message.data.content;
+                    appendLog(item);
+                }
+                else if (message.message_type == "error"){
+                    var item = document.createElement("div");
+                    item.innerText = message.data.error_msg;
+                    appendLog(item);
+                }
             } catch (e) {
                 console.error("Error parsing JSON message:", e);
             }

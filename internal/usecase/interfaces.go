@@ -50,7 +50,7 @@ type (
 
 	ConversationRepo interface {
 		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
-		StoreConversation(Message) error
+		StoreConversation(MessageRequest) error
 	}
 
 	Inbox interface {
@@ -70,5 +70,21 @@ type (
 		StoreContacts(context.Context, entity.ContactsDTO) error
 		UpdateRemoved(context.Context, entity.ContactsDTO) error
 		UpdateBlocked(context.Context, entity.ContactsDTO) error
+	}
+
+	MessageRepo interface {
+		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error)
+		ValidateMessageSentByUser(msgReq MessageRequest) (bool, error)
+		DeleteMessage(MessageRequest) error
+	}
+
+	Message interface {
+		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) (entity.MessageResponse, error)
+	}
+
+	ReactionRepo interface {
+		StoreReaction(MessageRequest) error
+		GetReactions(ctx context.Context, messageUUID string) ([]entity.Reaction, error)
+		RemoveReaction(msg MessageRequest) error
 	}
 )

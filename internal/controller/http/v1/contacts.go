@@ -52,6 +52,11 @@ func (r *contactRoute) addContact(c *gin.Context) {
 	}
 
 	contactUserName := c.Param("username")
+	if contactUserName == "" {
+		errorResponse(c, http.StatusUnprocessableEntity, "missing username in parameter")
+		return
+	}
+
 	err = r.t.AddContact(c.Request.Context(), contactUserName, userId)
 	if err != nil {
 		r.l.Error(err, "http - v1 - addContact - AddContacts")
@@ -70,6 +75,10 @@ func (r *contactRoute) removeContact(c *gin.Context) {
 	}
 
 	contactUserName := c.Param("username")
+	if contactUserName == "" {
+		errorResponse(c, http.StatusUnprocessableEntity, "missing username in parameter")
+		return
+	}
 	err = r.t.RemoveContact(c.Request.Context(), contactUserName, userId)
 	if err != nil {
 		r.l.Error(err, "http - v1 - addContact - AddContacts")
@@ -88,6 +97,10 @@ func (r *contactRoute) updateBlockContact(c *gin.Context) {
 	}
 
 	contactUserName := c.Param("username")
+	if contactUserName == "" {
+		errorResponse(c, http.StatusUnprocessableEntity, "missing username in parameter")
+		return
+	}
 	blockString, ok := c.GetQuery("block")
 	if !ok {
 		errorResponse(c, http.StatusUnprocessableEntity, "block query missing")

@@ -95,20 +95,6 @@ func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.User
 	FROM user_credentials
 	WHERE (username = $1 or email = $2)
 	`
-	// sql, args, err := r.Builder.
-	// 	Select("1").
-	// 	From("user_credentials").
-	// 	Where(
-	// 		squirrel.Or{
-	// 			squirrel.Eq{"username": userRegis.Username},
-	// 			squirrel.Eq{"email": userRegis.Email},
-	// 		},
-	// 	).
-	// 	ToSql()
-
-	// if err != nil {
-	// 	return false, fmt.Errorf("UserInfoRepo - CheckUserExist - r.Builder: %w", err)
-	// }
 
 	var exists int
 	err := r.QueryRowContext(ctx, checkUserExistSQL, userRegis.Username, userRegis.Email).Scan(&exists)
