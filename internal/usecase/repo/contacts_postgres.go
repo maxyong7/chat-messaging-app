@@ -154,7 +154,7 @@ func (r *ContactsRepo) UpdateBlocked(ctx context.Context, contacts entity.Contac
 		`
 	_, err = tx.ExecContext(ctx, updateBlockedSQL, contacts.Blocked, contacts.UserUUID, contacts.ContactUserUUID)
 	if err != nil {
-		return fmt.Errorf("failed to execute insert updateBlockedSQL query: %w", err)
+		return fmt.Errorf("failed to execute updateBlockedSQL query: %w", err)
 	}
 
 	// Commit the transaction

@@ -66,15 +66,15 @@ migrate-create:  ### create new migration
 .PHONY: migrate-create
 
 migrate-up: ### migration up
-	migrate -path migrations -database '$(PG_URL)?sslmode=disable' up
+	migrate -path migrations -database '$(PG_URL)' up
 .PHONY: migrate-up
 
 migrate-down: ### migration down
-	migrate -path migrations -database '$(PG_URL)?sslmode=disable' down
+	migrate -path migrations -database '$(PG_URL)' down
 .PHONY: migrate-down
 
 migrate-force: ### migration up
-	migrate -path migrations -database '$(PG_URL)?sslmode=disable' force '${v}'
+	migrate -path migrations -database '$(PG_URL)' force '${v}'
 .PHONY: migrate-force
 
 bin-deps:

@@ -21,7 +21,6 @@ func NewConversation(pg *sql.DB) *ConversationRepo {
 	return &ConversationRepo{pg}
 }
 
-// GetUserInfo -.
 func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
 	// Define the SQL query.
 	query := `
@@ -113,12 +112,12 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 }
 
 // StoreConversation -.
-func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
+func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
 	ctx := context.Background()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - StoreUserInfo - failed to begin transaction: %w", err)
+		return fmt.Errorf("ConversationRepo - StoreConversation - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -135,7 +134,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 		INSERT INTO messages (message_uuid, conversation_uuid, user_uuid, content, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.MessageUUID, msg.ConversationUUID, msg.SenderUUID, msg.Content, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.Data.MessageUUID, msg.Data.ConversationUUID, msg.Data.SenderUUID, msg.Data.Content, msg.Data.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}
@@ -154,7 +153,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.Message) error {
 		title = EXCLUDED.title,
 		last_message_created_at = EXCLUDED.last_message_created_at
 	`
-	_, err = tx.ExecContext(ctx, upsertConversationsSQL, msg.ConversationUUID, msg.Content, msg.SenderUUID, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, upsertConversationsSQL, msg.Data.ConversationUUID, msg.Data.Content, msg.Data.SenderUUID, msg.Data.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertConversationsSQL query: %w", err)
 	}
