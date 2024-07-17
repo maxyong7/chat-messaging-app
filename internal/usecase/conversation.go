@@ -25,6 +25,15 @@ const (
 
 	// Maximum message size allowed from peer.
 	maxMessageSize = 512
+
+	errorMessageType          = "error"
+	sendMessageType           = "send_message"
+	addReactionMessageType    = "add_reaction"
+	removeReactionMessageType = "remove_reaction"
+	deleteMessageType         = "delete_message"
+	errProcessingMessage      = "error processing message"
+	errProcessingReaction     = "error processing reaction"
+	errOnlyAuthorCanDeleteMsg = "cannot delete because user is not message author"
 )
 
 var (
@@ -34,60 +43,101 @@ var (
 
 // ConversationUseCase -.
 type ConversationUseCase struct {
-	repo     ConversationRepo
-	userRepo UserRepo
+	repo         ConversationRepo
+	userRepo     UserRepo
+	reactionRepo ReactionRepo
+	messageRepo  MessageRepo
 	// webAPI  TranslationWebAPI
 }
 
-// Message struct to hold message data
-type Message struct {
-	MessageUUID      string    `json:"message_uuid, omitempty"`
-	ConversationUUID string    `json:"conversation_uuid"`
-	SenderUUID       string    `json:"sender_uuid"`
-	Content          string    `json:"content"`
-	CreatedAt        time.Time `json:"created_at"`
+// MessageRequest struct to hold message data
+type MessageRequest struct {
+	MessageType string `json:"message_type"`
+	Data        Data   `json:"data"`
+}
+
+type Data struct {
+	MessageUUID      string `json:"message_uuid, omitempty"`
+	SenderUUID       string `json:"sender_uuid"`
+	ConversationUUID string `json:"conversation_uuid"`
+	ReactionData
+	MessageData
+}
+type ReactionData struct {
+	ReactionType string `json:"reaction_type"`
+}
+
+type MessageData struct {
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type MessageResponse struct {
-	MessageUUID      string    `json:"message_uuid, omitempty"`
-	ConversationUUID string    `json:"conversation_uuid"`
-	SenderFirstName  string    `json:"sender_first_name"`
-	SenderLastName   string    `json:"sender_last_name"`
-	Content          string    `json:"content"`
-	CreatedAt        time.Time `json:"created_at"`
+	MessageType  string       `json:"message_type"`
+	ResponseData ResponseData `json:"data"`
+}
+
+type ResponseData struct {
+	MessageUUID      string `json:"message_uuid, omitempty"`
+	ConversationUUID string `json:"conversation_uuid"`
+	ResponseReaction
+	ResponseMessage
+	ResponseError
+}
+
+type ResponseReaction struct {
+	Reaction string `json:"reaction, omitempty"`
+}
+
+type ResponseMessage struct {
+	SenderFirstName string    `json:"sender_first_name"`
+	SenderLastName  string    `json:"sender_last_name"`
+	Content         string    `json:"content"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+type ResponseError struct {
+	ErrorMessage string `json:"error_msg"`
+	SenderUUID   string `json:"sender_uuid"`
 }
 
 type Client struct {
-	ID       string
-	UserInfo *entity.UserInfoDTO
-	Conn     *websocket.Conn
-	send     chan MessageResponse
-	hub      *Hub
-	repo     ConversationRepo
+	ID           string
+	UserInfo     *entity.UserInfoDTO
+	Conn         *websocket.Conn
+	send         chan MessageResponse
+	hub          *Hub
+	repo         ConversationRepo
+	reactionRepo ReactionRepo
+	messageRepo  MessageRepo
 }
 
 type Hub struct {
-	Clients    map[string]map[*Client]bool
-	Register   chan *Client
-	Unregister chan *Client
-	Broadcast  chan MessageResponse
-	mu         sync.Mutex
+	Clients     map[string]map[*Client]bool
+	Register    chan *Client
+	Unregister  chan *Client
+	Broadcast   chan MessageResponse
+	HandleError chan MessageResponse
+	mu          sync.Mutex
 }
 
 // New -.
-func NewConversation(r ConversationRepo, userRepo UserRepo) *ConversationUseCase {
+func NewConversation(r ConversationRepo, userRepo UserRepo, reactionRepo ReactionRepo, msgRepo MessageRepo) *ConversationUseCase {
 	return &ConversationUseCase{
-		repo:     r,
-		userRepo: userRepo,
+		repo:         r,
+		userRepo:     userRepo,
+		reactionRepo: reactionRepo,
+		messageRepo:  msgRepo,
 	}
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		Clients:    make(map[string]map[*Client]bool),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Broadcast:  make(chan MessageResponse),
+		Clients:     make(map[string]map[*Client]bool),
+		Register:    make(chan *Client),
+		Unregister:  make(chan *Client),
+		Broadcast:   make(chan MessageResponse),
+		HandleError: make(chan MessageResponse),
 	}
 }
 
@@ -157,13 +207,26 @@ func (h *Hub) HandleMessage(message MessageResponse) {
 	fmt.Println("HandleMessage: ", message)
 	//Check if the message is a type of "message"
 	// if message.Type == "message" {
-	clients := h.Clients[message.ConversationUUID]
+	clients := h.Clients[message.ResponseData.ConversationUUID]
+	if message.MessageType == "error" {
+		for client := range clients {
+			if client.UserInfo.UserUUID == message.ResponseData.SenderUUID {
+				select {
+				case client.send <- message:
+				default:
+					close(client.send)
+					delete(h.Clients[message.ResponseData.ConversationUUID], client)
+				}
+			}
+		}
+		return
+	}
 	for client := range clients {
 		select {
 		case client.send <- message:
 		default:
 			close(client.send)
-			delete(h.Clients[message.ConversationUUID], client)
+			delete(h.Clients[message.ResponseData.ConversationUUID], client)
 		}
 	}
 
@@ -178,25 +241,71 @@ func (c *Client) readPump() {
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		var msg Message
+		var msg MessageRequest
 		err := c.Conn.ReadJSON(&msg)
-		msg.ConversationUUID = c.ID
-		msg.MessageUUID = uuid.New().String()
-		msg.SenderUUID = c.UserInfo.UserUUID
-		msg.CreatedAt = time.Now()
-
+		msg.Data.SenderUUID = c.UserInfo.UserUUID
 		fmt.Println("readPump: ", msg)
 		if err != nil {
 			fmt.Println("Error: ", err)
 			break
 		}
-		err = c.repo.StoreConversation(msg)
-		if err != nil {
-			fmt.Println("Conversation - readPump - StoreConversation err: ", err)
-			break
+		switch msg.MessageType {
+		case sendMessageType:
+			msg.Data.ConversationUUID = c.ID
+			msg.Data.MessageUUID = uuid.New().String()
+			msg.Data.CreatedAt = time.Now()
+			err = c.repo.StoreConversation(msg)
+			if err != nil {
+				fmt.Println("Conversation - readPump - StoreConversation err: ", err)
+				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+				c.hub.Broadcast <- errorMsg
+				break
+			}
+			msgResponse := c.buildMessageResponse(msg)
+			c.hub.Broadcast <- msgResponse
+		case deleteMessageType:
+			msg.Data.ConversationUUID = c.ID
+			valid, err := c.messageRepo.ValidateMessageSentByUser(msg)
+			if err != nil {
+				fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
+				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+				c.hub.Broadcast <- errorMsg
+				break
+			}
+			if !valid {
+				errorMsg := c.buildErrorMessage(msg, errOnlyAuthorCanDeleteMsg)
+				c.hub.Broadcast <- errorMsg
+			}
+			err = c.messageRepo.DeleteMessage(msg)
+			if err != nil {
+				fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
+				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+				c.hub.Broadcast <- errorMsg
+				break
+			}
+			msgResponse := c.buildMessageResponse(msg)
+			c.hub.Broadcast <- msgResponse
+		case addReactionMessageType:
+			err = c.reactionRepo.StoreReaction(msg)
+			if err != nil {
+				fmt.Println("Conversation - readPump - StoreReaction err: ", err)
+				errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
+				c.hub.Broadcast <- errorMsg
+				break
+			}
+			msgResponse := c.buildMessageResponse(msg)
+			c.hub.Broadcast <- msgResponse
+		case removeReactionMessageType:
+			err = c.reactionRepo.RemoveReaction(msg)
+			if err != nil {
+				fmt.Println("Conversation - readPump - RemoveReaction err: ", err)
+				errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
+				c.hub.Broadcast <- errorMsg
+				break
+			}
+			msgResponse := c.buildMessageResponse(msg)
+			c.hub.Broadcast <- msgResponse
 		}
-		msgResponse := c.buildMessageResponse(msg)
-		c.hub.Broadcast <- msgResponse
 
 	}
 }
@@ -234,26 +343,50 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *Client) buildMessageResponse(message Message) MessageResponse {
+func (c *Client) buildMessageResponse(message MessageRequest) MessageResponse {
 	return MessageResponse{
-		MessageUUID:      message.MessageUUID,
-		ConversationUUID: message.ConversationUUID,
-		SenderFirstName:  c.UserInfo.FirstName,
-		SenderLastName:   c.UserInfo.LastName,
-		Content:          message.Content,
-		CreatedAt:        message.CreatedAt,
+		MessageType: message.MessageType,
+		ResponseData: ResponseData{
+			MessageUUID:      message.Data.MessageUUID,
+			ConversationUUID: message.Data.ConversationUUID,
+			ResponseReaction: ResponseReaction{
+				Reaction: message.Data.ReactionType,
+			},
+			ResponseMessage: ResponseMessage{
+				SenderFirstName: c.UserInfo.FirstName,
+				SenderLastName:  c.UserInfo.LastName,
+				Content:         message.Data.Content,
+				CreatedAt:       message.Data.CreatedAt,
+			},
+		},
+	}
+}
+
+func (c *Client) buildErrorMessage(message MessageRequest, errorMsg string) MessageResponse {
+	return MessageResponse{
+		MessageType: errorMessageType,
+		ResponseData: ResponseData{
+			MessageUUID:      message.Data.MessageUUID,
+			ConversationUUID: message.Data.ConversationUUID,
+			ResponseError: ResponseError{
+				ErrorMessage: errorMsg,
+				SenderUUID:   c.UserInfo.UserUUID,
+			},
+		},
 	}
 }
 
 // NewClient creates a new client
-func NewClient(id string, userInfo *entity.UserInfoDTO, conn *websocket.Conn, hub *Hub, repo ConversationRepo) *Client {
+func NewClient(id string, userInfo *entity.UserInfoDTO, conn *websocket.Conn, hub *Hub, uc ConversationUseCase) *Client {
 	return &Client{
-		ID:       id,
-		UserInfo: userInfo,
-		Conn:     conn,
-		send:     make(chan MessageResponse, 256),
-		hub:      hub,
-		repo:     repo,
+		ID:           id,
+		UserInfo:     userInfo,
+		Conn:         conn,
+		send:         make(chan MessageResponse, 256),
+		hub:          hub,
+		repo:         uc.repo,
+		reactionRepo: uc.reactionRepo,
+		messageRepo:  uc.messageRepo,
 	}
 }
 
@@ -279,7 +412,7 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub, userUuid string
 	}
 
 	clientId := c.Param("conversationId")
-	client := NewClient(clientId, userInfo, conn, hub, uc.repo)
+	client := NewClient(clientId, userInfo, conn, hub, *uc)
 	hub.Register <- client
 	// client.Hub.Register <- client
 
