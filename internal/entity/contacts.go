@@ -13,3 +13,5 @@ type ContactsDTO struct {
 	Blocked          bool   `json:"blocked"`
 	Removed          bool   `json:"removed"`
 }
+
+const DirectMessageConversationType = "direct_message"
