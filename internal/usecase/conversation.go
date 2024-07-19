@@ -57,7 +57,7 @@ type MessageRequest struct {
 }
 
 type Data struct {
-	MessageUUID      string `json:"message_uuid, omitempty"`
+	MessageUUID      string `json:"message_uuid,omitempty"`
 	SenderUUID       string `json:"sender_uuid"`
 	ConversationUUID string `json:"conversation_uuid"`
 	ReactionData
@@ -78,7 +78,7 @@ type MessageResponse struct {
 }
 
 type ResponseData struct {
-	MessageUUID      string `json:"message_uuid, omitempty"`
+	MessageUUID      string `json:"message_uuid,omitempty"`
 	ConversationUUID string `json:"conversation_uuid"`
 	ResponseReaction
 	ResponseMessage
@@ -86,7 +86,7 @@ type ResponseData struct {
 }
 
 type ResponseReaction struct {
-	Reaction string `json:"reaction, omitempty"`
+	Reaction string `json:"reaction,omitempty"`
 }
 
 type ResponseMessage struct {

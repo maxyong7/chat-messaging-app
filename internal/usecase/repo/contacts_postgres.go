@@ -44,6 +44,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 	// Define the SQL query.
 	query := `
 		SELECT 
+			c.user_uuid,
 			ui.first_name,
 			ui.last_name,
 			ui.avatar,
@@ -65,7 +66,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 	var contacts []entity.Contacts
 	for rows.Next() {
 		var contact entity.Contacts
-		if err := rows.Scan(&contact.FirstName, &contact.LastName, &contact.Avatar, &contact.ConversationUUID, &contact.Blocked); err != nil {
+		if err := rows.Scan(&contact.UserUUID, &contact.FirstName, &contact.LastName, &contact.Avatar, &contact.ConversationUUID, &contact.Blocked); err != nil {
 			return nil, fmt.Errorf("ContactsRepo - GetContactsByUserUUID - rows.Scan: %w", err)
 		}
 		contacts = append(contacts, contact)
@@ -111,10 +112,10 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 
 	insertConversationsSQL := `
 	INSERT INTO conversations (
-		conversation_uuid
-	) VALUES ($1)
+		conversation_uuid, conversation_type
+	) VALUES ($1, $2)
 	`
-	_, err = tx.ExecContext(ctx, insertConversationsSQL, contacts.ConversationUUID)
+	_, err = tx.ExecContext(ctx, insertConversationsSQL, contacts.ConversationUUID, entity.DirectMessageConversationType)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertConversationsSQL query: %w", err)
 	}
