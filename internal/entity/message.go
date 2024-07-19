@@ -21,5 +21,5 @@ type Message struct {
 
 type SeenStatus struct {
 	UserInfo
-	SeenTimestamp string `json:"seen_timestamp`
+	SeenTimestamp string `json:"seen_timestamp"`
 }
