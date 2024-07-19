@@ -191,3 +191,25 @@ func (r *GroupChatRepo) UpdateGroupTitle(ctx context.Context, groupChat entity.G
 
 	return nil
 }
+
+// ValidateUserInGroupChat -.
+func (r *GroupChatRepo) ValidateUserInGroupChat(ctx context.Context, conversationUUID string, userUUID string) (bool, error) {
+	// Check if the user already exists
+	validateUserInGroupChatSQL := `
+	SELECT 1 
+	FROM participants
+	WHERE (conversation_uuid = $1 or user_uuid = $2)
+	`
+
+	var exists int
+	err := r.QueryRowContext(ctx, validateUserInGroupChatSQL, conversationUUID, userUUID).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return false, fmt.Errorf("GroupChatRepo - ValidateUserInGroupChat -  r.QueryRowContext: %w", err)
+	}
+
+	if exists > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}

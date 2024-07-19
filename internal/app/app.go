@@ -68,6 +68,10 @@ func Run(cfg *config.Config) {
 		repo.NewMessage(pg),
 		repo.NewReaction(pg),
 	)
+	groupChatUseCase := usecase.NewGroupChat(
+		repo.NewGroupChat(pg),
+		repo.NewUserInfo(pg),
+	)
 
 	// // RabbitMQ RPC Server
 	// rmqRouter := amqprpc.NewRouter(translationUseCase)
@@ -80,12 +84,12 @@ func Run(cfg *config.Config) {
 	// HTTP Server
 	handler := gin.New()
 	routerUseCase := v1.RouterUseCases{
-		// Translation:  translationUseCase,
 		Verification: verificationUseCase,
 		Conversation: conversationUseCase,
 		Inbox:        inboxUseCase,
 		Contact:      contactUseCase,
 		Message:      messageUseCase,
+		GroupChat:    groupChatUseCase,
 	}
 	v1.NewRouter(handler, l, routerUseCase)
 

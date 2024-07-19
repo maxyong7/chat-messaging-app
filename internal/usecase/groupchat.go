@@ -30,6 +30,25 @@ func (uc *GroupChatUseCase) CreateGroupChat(ctx context.Context, groupChatReq en
 }
 
 func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
+	// Check if user is in groupchat before allowing to add participant
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
+	if err != nil {
+		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
+	}
+	if !exist {
+		return entity.ErrUserNotInGroupChat
+	}
+
+	for i := range groupChatReq.Participants {
+		// Check if participant is in groupchat
+		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.Participants[i].ParticipantUUID)
+		if err != nil {
+			return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
+		}
+		if exist {
+			return entity.ErrParticipantAlrdInGroupChat
+		}
+	}
 
 	// // Check username exists [Needed if front end can only pass username, not participant's uuid]
 	// for i, participant := range groupChatReq.Participants {
@@ -45,7 +64,7 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq ent
 	// 	groupChatReq.Participants[i].ParticipantUUID = *participantUUID
 	// }
 
-	err := uc.repo.AddParticipants(ctx, groupChatReq)
+	err = uc.repo.AddParticipants(ctx, groupChatReq)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.AddParticipants: %w", err)
 	}
@@ -53,7 +72,27 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq ent
 }
 
 func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
-	err := uc.repo.RemoveParticipants(ctx, groupChatReq)
+	// Check if user is in groupchat before allowing to remove participant
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
+	if err != nil {
+		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
+	}
+	if !exist {
+		return entity.ErrUserNotInGroupChat
+	}
+
+	for i := range groupChatReq.Participants {
+		// Check if participant is in groupchat
+		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.Participants[i].ParticipantUUID)
+		if err != nil {
+			return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
+		}
+		if !exist {
+			return entity.ErrParticipantNotInGroupChat
+		}
+	}
+
+	err = uc.repo.RemoveParticipants(ctx, groupChatReq)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.RemoveParticipants: %w", err)
 	}
@@ -61,9 +100,18 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChatReq 
 }
 
 func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
-	err := uc.repo.UpdateGroupTitle(ctx, groupChatReq)
+	// Check if user is in groupchat before allowing to remove participant
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
 	if err != nil {
-		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.UpdateGroupTitle: %w", err)
+		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.ValidateUserInGroupChat: %w", err)
+	}
+	if !exist {
+		return entity.ErrUserNotInGroupChat
+	}
+
+	err = uc.repo.UpdateGroupTitle(ctx, groupChatReq)
+	if err != nil {
+		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.UpdateGroupTitles: %w", err)
 	}
 	return nil
 }

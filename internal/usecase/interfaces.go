@@ -93,6 +93,7 @@ type (
 		AddParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
 		RemoveParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
 		UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatRequest) error
+		ValidateUserInGroupChat(ctx context.Context, conversationUUID string, userUUID string) (bool, error)
 	}
 
 	GroupChat interface {
