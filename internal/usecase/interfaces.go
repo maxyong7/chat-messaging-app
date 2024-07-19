@@ -41,6 +41,7 @@ type (
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
 		GetUserUUIDByUsername(context.Context, string) (*string, error)
+		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error
 	}
 
 	Conversation interface {
@@ -101,5 +102,10 @@ type (
 		AddParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
 		RemoveParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
 		UpdateGroupTitle(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+	}
+
+	UserProfile interface {
+		GetUserInfo(ctx context.Context, userUUID string) (*entity.UserInfoDTO, error)
+		UpdateUserProfile(ctx context.Context, userInfoDTO entity.UserInfoDTO) error
 	}
 )
