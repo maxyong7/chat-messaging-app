@@ -87,4 +87,18 @@ type (
 		GetReactions(ctx context.Context, messageUUID string) ([]entity.Reaction, error)
 		RemoveReaction(msg MessageRequest) error
 	}
+
+	GroupChatRepo interface {
+		CreateGroupChat(ctx context.Context, groupChat entity.GroupChatRequest) error
+		AddParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
+		RemoveParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
+		UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatRequest) error
+	}
+
+	GroupChat interface {
+		CreateGroupChat(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+		AddParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+		RemoveParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+		UpdateGroupTitle(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+	}
 )

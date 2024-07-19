@@ -8,6 +8,7 @@ type GroupChatRequest struct {
 }
 
 type Participant struct {
+	Username        string `json:"username"`
 	ParticipantUUID string `json:"participant_uuid"`
 }
 
