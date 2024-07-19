@@ -77,7 +77,7 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 	// Check username exists
 	contactUserUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, contactUserName)
 	if err != nil {
-		return fmt.Errorf("ContactsUseCase - AddContacts - GetUserUUIDByUsername: %w", err)
+		return fmt.Errorf("ContactsUseCase - RemoveContact - GetUserUUIDByUsername: %w", err)
 	}
 
 	if contactUserUUID == nil {
@@ -103,7 +103,7 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 
 	err = uc.repo.UpdateRemoved(ctx, contactsDTO)
 	if err != nil {
-		return fmt.Errorf("ContactsUseCase - AddContacts - uc.repo.StoreContacts: %w", err)
+		return fmt.Errorf("ContactsUseCase - RemoveContact - uc.repo.UpdateRemoved: %w", err)
 	}
 	return nil
 }
