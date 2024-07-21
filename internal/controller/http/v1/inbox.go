@@ -39,7 +39,7 @@ func (r *inboxRoute) getInbox(c *gin.Context) {
 	}
 	limit := queryParamInt(c, "limit", 20)
 
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return

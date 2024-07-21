@@ -28,7 +28,7 @@ func newGroupChatRoute(handler *gin.RouterGroup, t usecase.GroupChat, l logger.I
 }
 
 func (r *groupChatRoute) createGroupChat(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -55,7 +55,7 @@ func (r *groupChatRoute) createGroupChat(c *gin.Context) {
 }
 
 func (r *groupChatRoute) addParticipant(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -82,7 +82,7 @@ func (r *groupChatRoute) addParticipant(c *gin.Context) {
 }
 
 func (r *groupChatRoute) removeParticipant(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -109,7 +109,7 @@ func (r *groupChatRoute) removeParticipant(c *gin.Context) {
 }
 
 func (r *groupChatRoute) updateGroupTitle(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return

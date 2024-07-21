@@ -38,7 +38,7 @@ func newConversationRoute(handler *gin.RouterGroup, t usecase.Conversation, l lo
 
 func (r *conversationRoutes) ServeWsController(hub *usecase.Hub) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId, err := getUserIDFromContext(c)
+		userId, err := getUserUUIDFromContext(c)
 		if err != nil {
 			errorResponse(c, http.StatusUnauthorized, "unauthorized")
 			return
