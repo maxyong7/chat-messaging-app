@@ -4,16 +4,16 @@ package entity
 
 // UserCredentials -.
 type UserCredentials struct {
-	Username string `json:"username"  example:"username"`
-	Password string `json:"password"  example:"password"`
-	Email    string `json:"email"  example:"email"`
+	Username string
+	Password string
+	Email    string
 }
 
 type UserRegistration struct {
 	UserCredentials
-	FirstName string `json:"first_name"  example:"first_name"`
-	LastName  string `json:"last_name"  example:"last_name"`
-	Avatar    string `json:"avatar,omitempty"  example:"avatar"`
+	FirstName string
+	LastName  string
+	Avatar    string
 }
 
 type UserCredentialsDTO struct {

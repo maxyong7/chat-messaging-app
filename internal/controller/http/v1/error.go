@@ -15,7 +15,7 @@ func handleCustomErrors(c *gin.Context, err error) {
 	switch err {
 	case entity.ErrUserAlreadyExists:
 		errorResponse(c, http.StatusConflict, err.Error())
-	case entity.ErrUserNameNotFound, entity.ErrContactDoesNotExists:
+	case entity.ErrUserNameNotFound, entity.ErrContactDoesNotExists, entity.ErrUserNotFound:
 		errorResponse(c, http.StatusNotFound, err.Error())
 	case entity.ErrContactAlreadyExists:
 		errorResponse(c, http.StatusConflict, err.Error())

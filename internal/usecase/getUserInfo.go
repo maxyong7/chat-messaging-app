@@ -29,7 +29,7 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCred
 	}
 
 	if userInfo == nil {
-		return "", false, nil
+		return "", false, entity.ErrUserNotFound
 	}
 
 	if userInfo.Password == v.Password {
