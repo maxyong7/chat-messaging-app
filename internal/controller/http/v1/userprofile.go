@@ -1,11 +1,12 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/maxyong7/chat-messaging-app/internal/entity"
+	"github.com/maxyong7/chat-messaging-app/internal/boundary"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
 )
@@ -26,7 +27,7 @@ func newUserProfile(handler *gin.RouterGroup, t usecase.UserProfile, l logger.In
 }
 
 func (r *userProfileRoute) getUserProfile(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -34,7 +35,7 @@ func (r *userProfileRoute) getUserProfile(c *gin.Context) {
 
 	userProfile, err := r.t.GetUserInfo(c.Request.Context(), userId)
 	if err != nil {
-		r.l.Error(err, "http - v1 - getContacts - GetContacts")
+		r.l.Error(err, "http - v1 - getUserProfile - GetUserInfo")
 		handleCustomErrors(c, err)
 		return
 	}
@@ -43,23 +44,20 @@ func (r *userProfileRoute) getUserProfile(c *gin.Context) {
 }
 
 func (r *userProfileRoute) updateUserProfile(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userUUID, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	var request entity.UserInfoDTO
+	var request boundary.UpdateUserProfileRequestModel
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - updateUserProfile")
-		errorResponse(c, http.StatusBadRequest, "invalid request body")
-
+		errorResponse(c, http.StatusBadRequest, fmt.Sprintf("invalid request body: %s", err))
 		return
 	}
 
-	request.UserUUID = userId
-
-	err = r.t.UpdateUserProfile(c.Request.Context(), request)
+	err = r.t.UpdateUserProfile(c.Request.Context(), request.ToUserInfo(userUUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - updateUserProfile - updateUserProfiles")
 		handleCustomErrors(c, err)

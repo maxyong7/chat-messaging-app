@@ -41,7 +41,7 @@ type (
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
 		GetUserUUIDByUsername(context.Context, string) (*string, error)
-		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error
+		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfo) error
 	}
 
 	Conversation interface {
@@ -105,7 +105,7 @@ type (
 	}
 
 	UserProfile interface {
-		GetUserInfo(ctx context.Context, userUUID string) (*entity.UserInfoDTO, error)
-		UpdateUserProfile(ctx context.Context, userInfoDTO entity.UserInfoDTO) error
+		GetUserInfo(ctx context.Context, userUUID string) (entity.UserInfo, error)
+		UpdateUserProfile(ctx context.Context, userInfoDTO entity.UserInfo) error
 	}
 )

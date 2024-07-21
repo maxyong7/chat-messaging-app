@@ -152,7 +152,7 @@ func (r *UserInfoRepo) GetUserUUIDByUsername(ctx context.Context, userName strin
 }
 
 // UpdateUserInfo -.
-func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error {
+func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfo) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -171,8 +171,8 @@ func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserI
 
 	insertUserCredentialsSQL := `
 		UPDATE user_info 
-		SET first_name = $1
-		last_name = $2
+		SET first_name = $1,
+		last_name = $2,
 		avatar = $3
 		WHERE user_uuid = $4
 	`
