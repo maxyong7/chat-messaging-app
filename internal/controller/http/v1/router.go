@@ -23,6 +23,7 @@ type RouterUseCases struct {
 	Contact      usecase.Contact
 	Message      usecase.Message
 	GroupChat    usecase.GroupChat
+	UserProfile  usecase.UserProfile
 }
 
 // NewRouter -.
@@ -64,6 +65,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 		newContactRoute(protectedHandler, uc.Contact, l)
 		newMessageRoute(protectedHandler, uc.Message, l)
 		newGroupChatRoute(protectedHandler, uc.GroupChat, l)
+		newUserProfile(protectedHandler, uc.UserProfile, l)
 	}
 
 }

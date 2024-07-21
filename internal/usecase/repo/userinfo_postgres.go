@@ -150,3 +150,42 @@ func (r *UserInfoRepo) GetUserUUIDByUsername(ctx context.Context, userName strin
 
 	return &userUUID, nil
 }
+
+// UpdateUserInfo -.
+func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error {
+	// Begin a transaction
+	tx, err := r.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("UserInfoRepo - UpdateUserInfo - failed to begin transaction: %w", err)
+	}
+
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; rollback
+		}
+	}()
+
+	insertUserCredentialsSQL := `
+		UPDATE user_info 
+		SET first_name = $1
+		last_name = $2
+		avatar = $3
+		WHERE user_uuid = $4
+	`
+
+	_, err = tx.ExecContext(ctx, insertUserCredentialsSQL, userInfo.FirstName, userInfo.LastName, userInfo.Avatar, userInfo.UserUUID)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert insertUserCredentialsSQL query: %w", err)
+	}
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("UserInfoRepo - UpdateUserInfo - failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
