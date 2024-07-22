@@ -80,7 +80,7 @@ type (
 	}
 
 	Message interface {
-		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) (entity.MessageResponse, error)
+		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error)
 	}
 
 	ReactionRepo interface {

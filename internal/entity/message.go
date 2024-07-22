@@ -2,15 +2,6 @@ package entity
 
 import "time"
 
-type MessageResponse struct {
-	Data       MessageData `json:"data"`
-	Pagination Pagination  `json:"pagination"`
-}
-
-type MessageData struct {
-	Messages []Message `json:"messages"`
-}
-
 type Message struct {
 	MessageUUID string    `json:"message_uuid"`
 	Content     string    `json:"content"`

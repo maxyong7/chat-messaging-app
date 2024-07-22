@@ -22,31 +22,22 @@ func NewMessage(m MessageRepo, r ReactionRepo) *MessageUseCase {
 }
 
 // VerifyCredentials -.
-func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) (entity.MessageResponse, error) {
+func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error) {
 	messages, err := uc.msgRepo.GetMessages(ctx, reqParam, conversationUUID)
 	if err != nil {
-		return entity.MessageResponse{}, fmt.Errorf("MessageUseCase - GetMessages - uc.msgRepo.GetMessages: %w", err)
+		return nil, fmt.Errorf("MessageUseCase - GetMessages - uc.msgRepo.GetMessages: %w", err)
 	}
 	if len(messages) == 0 {
-		return entity.MessageResponse{}, nil
+		return nil, nil
 	}
 
 	for i, msg := range messages {
 		reactions, err := uc.reactionRepo.GetReactions(ctx, msg.MessageUUID)
 		if err != nil {
-			return entity.MessageResponse{}, fmt.Errorf("MessageUseCase - GetMessages - uc.reactionRepo.GetReactions: %w", err)
+			return nil, fmt.Errorf("MessageUseCase - GetMessages - uc.reactionRepo.GetReactions: %w", err)
 		}
 		messages[i].Reaction = reactions
 	}
 
-	encodedCursor := encodeCursor(&messages[len(messages)-1].CreatedAt)
-	return entity.MessageResponse{
-		Data: entity.MessageData{
-			Messages: messages,
-		},
-		Pagination: entity.Pagination{
-			Cursor: encodedCursor,
-			Limit:  reqParam.Limit,
-		},
-	}, nil
+	return messages, nil
 }

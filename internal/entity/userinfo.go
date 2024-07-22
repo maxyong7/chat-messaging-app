@@ -8,10 +8,10 @@ type UserInfoDTO struct {
 }
 
 type UserInfo struct {
-	UserUUID  string `json:"user_uuid,omitempty"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Avatar    string `json:"avatar"`
+	UserUUID  string
+	FirstName string
+	LastName  string
+	Avatar    string
 }
 
 func (dto *UserInfoDTO) ToUserInfo() UserInfo {

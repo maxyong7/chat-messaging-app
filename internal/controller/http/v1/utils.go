@@ -102,3 +102,18 @@ func createToken(userUuid string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte("secret"))
 }
+
+func encodeCursor(cursor *time.Time) string {
+	if cursor == nil {
+		return ""
+	}
+	if cursor.IsZero() {
+		return ""
+	}
+	serializedCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return ""
+	}
+	encodedCursor := base64.StdEncoding.EncodeToString(serializedCursor)
+	return encodedCursor
+}

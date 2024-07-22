@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/maxyong7/chat-messaging-app/internal/boundary"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
@@ -57,5 +58,20 @@ func (r *messageRoute) getMessagesFromConversation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, messages)
+	var encodedCursor string
+	if len(messages) == limit {
+		encodedCursor = encodeCursor(&messages[len(messages)-1].CreatedAt)
+	}
+
+	msgResp := boundary.MessageResponseModel{
+		Data: boundary.MessageData{
+			Messages: messages,
+		},
+		Pagination: boundary.Pagination{
+			Cursor: encodedCursor,
+			Limit:  limit,
+		},
+	}
+
+	c.JSON(http.StatusOK, msgResp)
 }
