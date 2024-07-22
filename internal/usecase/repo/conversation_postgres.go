@@ -56,7 +56,6 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	// If there are no conversation UUIDs, return early.
 	if len(conversationUUIDs) == 0 {
 		fmt.Println("No conversations found.")
-		// return nil, entity.ErrNoConversationFound
 		return nil, nil
 	}
 

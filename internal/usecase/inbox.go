@@ -20,23 +20,14 @@ func NewInbox(r ConversationRepo) *InboxUseCase {
 }
 
 // VerifyCredentials -.
-func (uc *InboxUseCase) GetInbox(ctx context.Context, reqParam entity.RequestParams) (entity.InboxResponse, error) {
+func (uc *InboxUseCase) GetInbox(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
 	conversations, err := uc.repo.GetConversations(ctx, reqParam)
 	if err != nil {
-		return entity.InboxResponse{}, fmt.Errorf("InboxUseCase - GetInbox - s.repo.GetConversations: %w", err)
+		return nil, fmt.Errorf("InboxUseCase - GetInbox - s.repo.GetConversations: %w", err)
 	}
 	if len(conversations) == 0 {
-		return entity.InboxResponse{}, nil
+		return nil, nil
 	}
 
-	encodedCursor := encodeCursor(conversations[len(conversations)-1].LastMessageCreatedAt)
-	return entity.InboxResponse{
-		Data: entity.Data{
-			Conversations: conversations,
-		},
-		Pagination: entity.Pagination{
-			Cursor: encodedCursor,
-			Limit:  reqParam.Limit,
-		},
-	}, nil
+	return conversations, nil
 }

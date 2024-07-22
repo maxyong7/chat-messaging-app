@@ -4,15 +4,6 @@ import (
 	"time"
 )
 
-type InboxResponse struct {
-	Data       Data       `json:"data"`
-	Pagination Pagination `json:"pagination"`
-}
-
-type Data struct {
-	Conversations []Conversations `json:"conversations"`
-}
-
 type Conversations struct {
 	Title                *string    `json:"title"`
 	LastMessage          *string    `json:"last_message"`

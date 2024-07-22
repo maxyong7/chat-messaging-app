@@ -55,7 +55,7 @@ type (
 	}
 
 	Inbox interface {
-		GetInbox(context.Context, entity.RequestParams) (entity.InboxResponse, error)
+		GetInbox(context.Context, entity.RequestParams) ([]entity.Conversations, error)
 	}
 
 	Contact interface {

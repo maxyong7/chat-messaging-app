@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/maxyong7/chat-messaging-app/internal/boundary"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
@@ -21,13 +22,6 @@ func newInboxRoute(handler *gin.RouterGroup, t usecase.Inbox, l logger.Interface
 	h := handler.Group("/inbox")
 	{
 		h.GET("", route.getInbox)
-		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
-		// 	route.t.ServeWsWithRW(w, r, hub)
-		// })
-		// http.HandleFunc("/ws1", func(w http.ResponseWriter, r *http.Request) {
-		// 	route.t.ServeWsWithRW(w, r, hub)
-		// })
-		// h.GET("/ws", route.ServeWsController)
 	}
 }
 
@@ -51,12 +45,27 @@ func (r *inboxRoute) getInbox(c *gin.Context) {
 		UserID: userId,
 	}
 
-	inboxResponse, err := r.t.GetInbox(c.Request.Context(), requestParams)
+	conversations, err := r.t.GetInbox(c.Request.Context(), requestParams)
 	if err != nil {
 		r.l.Error(err, "http - v1 - getInbox - GetInbox")
 		handleCustomErrors(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, inboxResponse)
+	var encodedCursor string
+	if len(conversations) == limit {
+		encodedCursor = encodeCursor(conversations[len(conversations)-1].LastMessageCreatedAt)
+	}
+
+	conversationResp := boundary.InboxResponseModel{
+		Data: boundary.InboxData{
+			Conversations: conversations,
+		},
+		Pagination: boundary.Pagination{
+			Cursor: encodedCursor,
+			Limit:  limit,
+		},
+	}
+
+	c.JSON(http.StatusOK, conversationResp)
 }
