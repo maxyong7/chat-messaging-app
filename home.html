@@ -47,16 +47,16 @@ window.onload = function () {
         if (!msg.value) {
             return false;
         }
-        // Send message
-        var message = {
-            message_type: "send_message",
-            // sender: getUserId(),  // Adjust this as needed
-            // recipient: "user2",  // Adjust this as needed
-            data: {
-                content: msg.value
-            },
-            // conversation_uuid: ""  // Adjust this as needed
-        };
+        // // Send message
+        // var message = {
+        //     message_type: "send_message",
+        //     // sender: getUserId(),  // Adjust this as needed
+        //     // recipient: "user2",  // Adjust this as needed
+        //     data: {
+        //         content: msg.value,
+        //     },
+        //     // conversation_uuid: ""  // Adjust this as needed
+        // };
         // // Remove Reaction
         // var message = {
         //     message_type: "remove_reaction",
@@ -68,16 +68,16 @@ window.onload = function () {
         //     },
         //     // conversation_uuid: ""  // Adjust this as needed
         // };
-        // // Delete Message
-        // var message = {
-        //     message_type: "delete_message",
-        //     // sender: getUserId(),  // Adjust this as needed
-        //     // recipient: "user2",  // Adjust this as needed
-        //     data: {
-        //         message_uuid: "5e9beb8e-9748-46a4-ac32-bbad4003eea9",
-        //     },
-        //     // conversation_uuid: ""  // Adjust this as needed
-        // };
+        // Delete Message
+        var message = {
+            message_type: "delete_message",
+            // sender: getUserId(),  // Adjust this as needed
+            // recipient: "user2",  // Adjust this as needed
+            data: {
+                message_uuid: "5e9beb8e-9748-46a4-ac32-bbad4003eea9",
+            },
+            // conversation_uuid: ""  // Adjust this as needed
+        };
         
         conn.send(JSON.stringify(message));
         msg.value = "";

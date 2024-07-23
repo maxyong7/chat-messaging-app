@@ -1,15 +1,17 @@
 package boundary
 
+import "encoding/json"
+
 type ConversationRequestModel struct {
-	MessageType string                  `json:"message_type" binding:"required"`
-	Data        ConversationRequestData `json:"data" binding:"required"`
+	MessageType string          `json:"message_type" binding:"required"`
+	Data        json.RawMessage `json:"data" binding:"required"`
 }
 
-type ConversationRequestData struct {
-	SendMessageRequest
-	DeleteMessageRequest
-	AddReactionRequest
-}
+// type ConversationRequestData struct {
+// 	SendMessageRequest
+// 	DeleteMessageRequest
+// 	AddReactionRequest
+// }
 
 type ConversationResponseModel struct {
 	MessageType string                   `json:"message_type"`

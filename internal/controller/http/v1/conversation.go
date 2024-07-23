@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -280,14 +281,22 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 	ctx := context.Background()
 	switch convReq.MessageType {
 	case sendMessageType:
+		var sendMessageRequest boundary.SendMessageRequest
+		err := json.Unmarshal(convReq.Data, &sendMessageRequest)
+		if err != nil {
+			fmt.Println("handleConversation - unmarshall error for sendMessageRequest", err)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
 		conv := entity.Conversation{
 			SenderUUID:       userInfo.UserUUID,
 			ConversationUUID: c.ID,
 			MessageUUID:      uuid.New().String(),
-			Content:          convReq.Data.SendMessageRequest.Content,
+			Content:          sendMessageRequest.Content,
 			CreatedAt:        time.Now(),
 		}
-		err := c.route.conv.StoreConversationAndMessage(ctx, conv)
+		err = c.route.conv.StoreConversationAndMessage(ctx, conv)
 		if err != nil {
 			fmt.Println("Conversation - handleConversation - StoreConversation err: ", err)
 			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
@@ -297,9 +306,17 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		sendMsgResponse := buildSendMessageResponse(conv, userInfo)
 		c.hub.Broadcast <- sendMsgResponse
 	case deleteMessageType:
+		var deleteMessageRequest boundary.DeleteMessageRequest
+		err := json.Unmarshal(convReq.Data, &deleteMessageRequest)
+		if err != nil {
+			fmt.Println("handleConversation - unmarshall error for deleteMessageRequest", err)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
 		msg := entity.Message{
 			SenderUUID:  senderUUID,
-			MessageUUID: convReq.Data.DeleteMessageRequest.MessageUUID,
+			MessageUUID: deleteMessageRequest.MessageUUID,
 		}
 		valid, err := c.route.msg.ValidateMessageSentByUser(ctx, msg)
 		if err != nil {
@@ -322,12 +339,20 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		deleteMsgResponse := buildDeleteMessageResponse(msg, conversationUUID)
 		c.hub.Broadcast <- deleteMsgResponse
 	case addReactionMessageType:
-		reaction := entity.Reaction{
-			MessageUUID:  convReq.Data.AddReactionRequest.MessageUUID,
-			SenderUUID:   userInfo.UserUUID,
-			ReactionType: convReq.Data.AddReactionRequest.ReactionType,
+		var addReactionRequest boundary.AddReactionRequest
+		err := json.Unmarshal(convReq.Data, &addReactionRequest)
+		if err != nil {
+			fmt.Println("handleConversation - unmarshall error for addReactionRequest", err)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
+			c.hub.Broadcast <- errorMsg
+			break
 		}
-		err := c.route.reaction.StoreReaction(ctx, reaction)
+		reaction := entity.Reaction{
+			MessageUUID:  addReactionRequest.MessageUUID,
+			SenderUUID:   userInfo.UserUUID,
+			ReactionType: addReactionRequest.ReactionType,
+		}
+		err = c.route.reaction.StoreReaction(ctx, reaction)
 		if err != nil {
 			fmt.Println("Conversation - readPump - StoreReaction err: ", err)
 			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
@@ -337,12 +362,19 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		addReactionResponse := buildReactionResponse(addReactionMessageType, reaction, conversationUUID)
 		c.hub.Broadcast <- addReactionResponse
 	case removeReactionMessageType:
-		reaction := entity.Reaction{
-			MessageUUID:  convReq.Data.AddReactionRequest.MessageUUID,
-			SenderUUID:   userInfo.UserUUID,
-			ReactionType: convReq.Data.AddReactionRequest.ReactionType,
+		var removeReactionRequest boundary.RemoveReactionRequest
+		err := json.Unmarshal(convReq.Data, &removeReactionRequest)
+		if err != nil {
+			fmt.Println("handleConversation - unmarshall error for removeReactionRequest", err)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
+			c.hub.Broadcast <- errorMsg
+			break
 		}
-		err := c.route.reaction.RemoveReaction(ctx, reaction)
+		reaction := entity.Reaction{
+			MessageUUID: removeReactionRequest.MessageUUID,
+			SenderUUID:  userInfo.UserUUID,
+		}
+		err = c.route.reaction.RemoveReaction(ctx, reaction)
 		if err != nil {
 			fmt.Println("Conversation - readPump - RemoveReaction err: ", err)
 			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
