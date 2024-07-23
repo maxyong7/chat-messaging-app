@@ -64,7 +64,7 @@ func (r *messageRoute) getMessagesFromConversation(c *gin.Context) {
 	}
 
 	msgResp := boundary.MessageResponseModel{
-		Data: boundary.MessageData{
+		Data: boundary.MessageResponseData{
 			Messages: messages,
 		},
 		Pagination: boundary.Pagination{

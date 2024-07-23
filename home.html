@@ -47,16 +47,16 @@ window.onload = function () {
         if (!msg.value) {
             return false;
         }
-        // // Send message
-        // var message = {
-        //     message_type: "message",
-        //     // sender: getUserId(),  // Adjust this as needed
-        //     // recipient: "user2",  // Adjust this as needed
-        //     data: {
-        //         content: msg.value
-        //     },
-        //     // conversation_uuid: ""  // Adjust this as needed
-        // };
+        // Send message
+        var message = {
+            message_type: "message",
+            // sender: getUserId(),  // Adjust this as needed
+            // recipient: "user2",  // Adjust this as needed
+            data: {
+                content: msg.value
+            },
+            // conversation_uuid: ""  // Adjust this as needed
+        };
         // // Remove Reaction
         // var message = {
         //     message_type: "remove_reaction",
@@ -68,16 +68,16 @@ window.onload = function () {
         //     },
         //     // conversation_uuid: ""  // Adjust this as needed
         // };
-        // Delete Message
-        var message = {
-            message_type: "delete_message",
-            // sender: getUserId(),  // Adjust this as needed
-            // recipient: "user2",  // Adjust this as needed
-            data: {
-                message_uuid: "5e9beb8e-9748-46a4-ac32-bbad4003eea9",
-            },
-            // conversation_uuid: ""  // Adjust this as needed
-        };
+        // // Delete Message
+        // var message = {
+        //     message_type: "delete_message",
+        //     // sender: getUserId(),  // Adjust this as needed
+        //     // recipient: "user2",  // Adjust this as needed
+        //     data: {
+        //         message_uuid: "5e9beb8e-9748-46a4-ac32-bbad4003eea9",
+        //     },
+        //     // conversation_uuid: ""  // Adjust this as needed
+        // };
         
         conn.send(JSON.stringify(message));
         msg.value = "";
@@ -85,7 +85,7 @@ window.onload = function () {
     };
 
     if (window["WebSocket"]) {
-        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/8fa53c4d-b273-40db-b839-c5caa211b668",["access_token", getToken()]);
+        conn = new WebSocket("ws://" + document.location.host + "/v1/conversation/ws/f36ef3e6-22de-4e1d-a6ef-26cfbc21d7e1",["access_token", getToken()]);
         conn.onerror = function (evt) {
             console.log("Error message")
             var messages = evt.data.split('\n');

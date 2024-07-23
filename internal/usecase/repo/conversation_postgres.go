@@ -7,7 +7,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 )
 
 // ConversationRepo -.
@@ -111,7 +110,7 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 }
 
 // StoreConversation -.
-func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
+func (r *ConversationRepo) StoreConversation(msg entity.ConversationMessage) error {
 	ctx := context.Background()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)

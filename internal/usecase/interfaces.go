@@ -51,7 +51,7 @@ type (
 
 	ConversationRepo interface {
 		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
-		StoreConversation(MessageRequest) error
+		StoreConversation(entity.ConversationMessage) error
 	}
 
 	Inbox interface {

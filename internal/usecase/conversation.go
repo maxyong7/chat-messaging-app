@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/maxyong7/chat-messaging-app/internal/boundary"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
@@ -50,27 +51,27 @@ type ConversationUseCase struct {
 	// webAPI  TranslationWebAPI
 }
 
-// MessageRequest struct to hold message data
-type MessageRequest struct {
-	MessageType string `json:"message_type"`
-	Data        Data   `json:"data"`
-}
+// // MessageRequest struct to hold message data
+// type MessageRequest struct {
+// 	MessageType string `json:"message_type"`
+// 	Data        Data   `json:"data"`
+// }
 
-type Data struct {
-	MessageUUID      string `json:"message_uuid,omitempty"`
-	SenderUUID       string `json:"sender_uuid"`
-	ConversationUUID string `json:"conversation_uuid"`
-	ReactionData
-	MessageData
-}
+//	type Data struct {
+//		MessageUUID      string `json:"message_uuid,omitempty"`
+//		SenderUUID       string `json:"sender_uuid"`
+//		ConversationUUID string `json:"conversation_uuid"`
+//		ReactionData
+//		MessageData
+//	}
 type ReactionData struct {
 	ReactionType string `json:"reaction_type"`
 }
 
-type MessageData struct {
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-}
+// type MessageData struct {
+// 	Content   string    `json:"content"`
+// 	CreatedAt time.Time `json:"created_at"`
+// }
 
 type MessageResponse struct {
 	MessageType  string       `json:"message_type"`
@@ -116,7 +117,7 @@ type Hub struct {
 	Clients     map[string]map[*Client]bool
 	Register    chan *Client
 	Unregister  chan *Client
-	Broadcast   chan MessageResponse
+	Broadcast   chan boundary.ConversationResponseModel
 	HandleError chan MessageResponse
 	mu          sync.Mutex
 }
@@ -136,7 +137,7 @@ func NewHub() *Hub {
 		Clients:     make(map[string]map[*Client]bool),
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
-		Broadcast:   make(chan MessageResponse),
+		Broadcast:   make(chan boundary.ConversationResponseModel),
 		HandleError: make(chan MessageResponse),
 	}
 }
@@ -167,7 +168,7 @@ func (h *Hub) Run() {
 			fmt.Printf("Client %s disconnected\n", client.ID)
 		case message := <-h.Broadcast:
 			h.mu.Lock()
-			h.HandleMessage(message)
+			h.HandleBroadcast(message)
 			// for id, client := range h.Clients {
 			// 	select {
 			// 	case client.Send <- message:
@@ -203,19 +204,19 @@ func (h *Hub) RemoveClient(client *Client) {
 }
 
 // function to handle message based on type of message
-func (h *Hub) HandleMessage(message MessageResponse) {
-	fmt.Println("HandleMessage: ", message)
+func (h *Hub) HandleBroadcast(message boundary.ConversationResponseModel) {
+	fmt.Println("HandleBroadcast: ", message)
 	//Check if the message is a type of "message"
 	// if message.Type == "message" {
-	clients := h.Clients[message.ResponseData.ConversationUUID]
+	clients := h.Clients[message.Data.ConversationUUID]
 	if message.MessageType == "error" {
 		for client := range clients {
-			if client.UserInfo.UserUUID == message.ResponseData.SenderUUID {
+			if client.UserInfo.UserUUID == message.Data.SenderUUID {
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
-					delete(h.Clients[message.ResponseData.ConversationUUID], client)
+					delete(h.Clients[message.Data.ConversationUUID], client)
 				}
 			}
 		}
@@ -241,72 +242,14 @@ func (c *Client) readPump() {
 	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		var msg MessageRequest
-		err := c.Conn.ReadJSON(&msg)
-		msg.Data.SenderUUID = c.UserInfo.UserUUID
-		fmt.Println("readPump: ", msg)
+		var msgReq boundary.ConversationRequestModel
+		err := c.Conn.ReadJSON(&msgReq)
+		fmt.Println("readPump: ", msgReq)
 		if err != nil {
-			fmt.Println("Error: ", err)
+			fmt.Println("readPump - Error ReadJSON", err)
 			break
 		}
-		switch msg.MessageType {
-		case sendMessageType:
-			msg.Data.ConversationUUID = c.ID
-			msg.Data.MessageUUID = uuid.New().String()
-			msg.Data.CreatedAt = time.Now()
-			err = c.repo.StoreConversation(msg)
-			if err != nil {
-				fmt.Println("Conversation - readPump - StoreConversation err: ", err)
-				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
-				c.hub.Broadcast <- errorMsg
-				break
-			}
-			msgResponse := c.buildMessageResponse(msg)
-			c.hub.Broadcast <- msgResponse
-		case deleteMessageType:
-			msg.Data.ConversationUUID = c.ID
-			valid, err := c.messageRepo.ValidateMessageSentByUser(msg)
-			if err != nil {
-				fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
-				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
-				c.hub.Broadcast <- errorMsg
-				break
-			}
-			if !valid {
-				errorMsg := c.buildErrorMessage(msg, errOnlyAuthorCanDeleteMsg)
-				c.hub.Broadcast <- errorMsg
-			}
-			err = c.messageRepo.DeleteMessage(msg)
-			if err != nil {
-				fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
-				errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
-				c.hub.Broadcast <- errorMsg
-				break
-			}
-			msgResponse := c.buildMessageResponse(msg)
-			c.hub.Broadcast <- msgResponse
-		case addReactionMessageType:
-			err = c.reactionRepo.StoreReaction(msg)
-			if err != nil {
-				fmt.Println("Conversation - readPump - StoreReaction err: ", err)
-				errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
-				c.hub.Broadcast <- errorMsg
-				break
-			}
-			msgResponse := c.buildMessageResponse(msg)
-			c.hub.Broadcast <- msgResponse
-		case removeReactionMessageType:
-			err = c.reactionRepo.RemoveReaction(msg)
-			if err != nil {
-				fmt.Println("Conversation - readPump - RemoveReaction err: ", err)
-				errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
-				c.hub.Broadcast <- errorMsg
-				break
-			}
-			msgResponse := c.buildMessageResponse(msg)
-			c.hub.Broadcast <- msgResponse
-		}
-
+		c.handleConversation(msgReq, c.UserInfo.UserUUID)
 	}
 }
 
@@ -340,25 +283,6 @@ func (c *Client) writePump() {
 				return
 			}
 		}
-	}
-}
-
-func (c *Client) buildMessageResponse(message MessageRequest) MessageResponse {
-	return MessageResponse{
-		MessageType: message.MessageType,
-		ResponseData: ResponseData{
-			MessageUUID:      message.Data.MessageUUID,
-			ConversationUUID: message.Data.ConversationUUID,
-			ResponseReaction: ResponseReaction{
-				Reaction: message.Data.ReactionType,
-			},
-			ResponseMessage: ResponseMessage{
-				SenderFirstName: c.UserInfo.FirstName,
-				SenderLastName:  c.UserInfo.LastName,
-				Content:         message.Data.Content,
-				CreatedAt:       message.Data.CreatedAt,
-			},
-		},
 	}
 }
 
@@ -420,21 +344,75 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub, userUuid string
 	go client.readPump()
 }
 
-// func (uc *ConversationUseCase) ServeWsWithRW(w http.ResponseWriter, r *http.Request, hub *Hub) {
-// 	conn, err := upgrader.Upgrade(w, r, nil)
-// 	if err != nil {
-// 		log.Println(err)
-// 		return
-// 	}
-// 	// clientID := c.Request.URL.Query().Get("id")
-// 	clientID := "thisIsClientID"
-// 	// clientID := r.URL.Query().Get("id")
+func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, senderUUID string) {
+	switch convReq.MessageType {
+	case sendMessageType:
+		msg := convReq.Data.ToMessage(c.ID)
+		msg.MessageUUID = uuid.New().String()
+		msg.CreatedAt = time.Now()
+		err := c.repo.StoreConversation(msg)
+		if err != nil {
+			fmt.Println("Conversation - handleConversation - StoreConversation err: ", err)
+			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
+		msgResponse := conversationMessageToResponse(msg, sendMessageType)
+		c.hub.Broadcast <- msgResponse
+	case deleteMessageType:
+		msg.Data.ConversationUUID = c.ID
+		valid, err := c.messageRepo.ValidateMessageSentByUser(msg)
+		if err != nil {
+			fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
+			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
+		if !valid {
+			errorMsg := c.buildErrorMessage(msg, errOnlyAuthorCanDeleteMsg)
+			c.hub.Broadcast <- errorMsg
+		}
+		err = c.messageRepo.DeleteMessage(msg)
+		if err != nil {
+			fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
+			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
+		msgResponse := c.buildMessageResponse(msg)
+		c.hub.Broadcast <- msgResponse
+	case addReactionMessageType:
+		err = c.reactionRepo.StoreReaction(msg)
+		if err != nil {
+			fmt.Println("Conversation - readPump - StoreReaction err: ", err)
+			errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
+		msgResponse := c.buildMessageResponse(msg)
+		c.hub.Broadcast <- msgResponse
+	case removeReactionMessageType:
+		err = c.reactionRepo.RemoveReaction(msg)
+		if err != nil {
+			fmt.Println("Conversation - readPump - RemoveReaction err: ", err)
+			errorMsg := c.buildErrorMessage(msg, errProcessingReaction)
+			c.hub.Broadcast <- errorMsg
+			break
+		}
+		msgResponse := c.buildMessageResponse(msg)
+		c.hub.Broadcast <- msgResponse
+	}
+}
 
-// 	client := NewClient(clientID, conn, hub)
-// 	// client := &Client{ID: clientID, Conn: conn, send: make(chan []byte, 256), hub: hub}
-// 	// hub.Register <- client
-// 	client.hub.Register <- client
-
-// 	go client.writePump()
-// 	go client.readPump()
-// }
+func conversationMessageToResponse(convMsg entity.ConversationMessage, messageType string) boundary.ConversationResponseModel {
+	return boundary.ConversationResponseModel{
+		MessageType: messageType,
+		Data: boundary.ConversationResponseData{
+			Conversation: entity.Conversation{
+				SenderUUID:          "",
+				ConversationUUID:    "",
+				ConversationMessage: entity.ConversationMessage{},
+			},
+		},
+	}
+}
