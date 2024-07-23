@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 )
 
 // MessageRepo -.
@@ -72,7 +71,7 @@ func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestPa
 	return messages, nil
 }
 
-func (r *MessageRepo) ValidateMessageSentByUser(msgReq usecase.MessageRequest) (bool, error) {
+func (r *MessageRepo) ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error) {
 	validateMessageSQL := `
 		SELECT 1
 		FROM messages 
@@ -80,9 +79,9 @@ func (r *MessageRepo) ValidateMessageSentByUser(msgReq usecase.MessageRequest) (
 	`
 
 	var exists int
-	err := r.QueryRow(validateMessageSQL, msgReq.Data.MessageUUID, msgReq.Data.SenderUUID).Scan(&exists)
+	err := r.QueryRowContext(ctx, validateMessageSQL, msg.MessageUUID, conv.SenderUUID).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		return false, fmt.Errorf("UserInfoRepo - CheckUserExist -  r.QueryRowContext: %w", err)
+		return false, fmt.Errorf("MessageRepo - ValidateMessageSentByUser -  validateMessageSQL: %w", err)
 	}
 
 	if exists > 0 {
@@ -93,8 +92,7 @@ func (r *MessageRepo) ValidateMessageSentByUser(msgReq usecase.MessageRequest) (
 
 }
 
-func (r *MessageRepo) DeleteMessage(msgReq usecase.MessageRequest) error {
-	ctx := context.Background()
+func (r *MessageRepo) DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -116,7 +114,7 @@ func (r *MessageRepo) DeleteMessage(msgReq usecase.MessageRequest) error {
 		WHERE message_uuid = $1
 		AND user_uuid = $2
 		`
-	_, err = tx.ExecContext(ctx, deleteMessageSQL, msgReq.Data.MessageUUID, msgReq.Data.SenderUUID)
+	_, err = tx.ExecContext(ctx, deleteMessageSQL, msg.MessageUUID, conv.SenderUUID)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert deleteMessageSQL query: %w", err)
 	}

@@ -75,12 +75,14 @@ type (
 
 	MessageRepo interface {
 		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
-		ValidateMessageSentByUser(msgReq MessageRequest) (bool, error)
-		DeleteMessage(MessageRequest) error
+		ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error)
+		DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error
 	}
 
 	Message interface {
 		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
+		DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error
+		ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error)
 	}
 
 	ReactionRepo interface {

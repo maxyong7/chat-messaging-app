@@ -178,7 +178,7 @@ func NewConversation(r ConversationRepo, userRepo UserRepo, reactionRepo Reactio
 // }
 
 func (uc *ConversationUseCase) StoreConversation(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
-	err := uc.repo.StoreConversation(conv, msg)
+	err := uc.repo.StoreConversation(ctx, conv, msg)
 	if err != nil {
 		return fmt.Errorf("ConversationUseCase - StoreConversation - uc.repo.StoreConversation: %w", err)
 	}

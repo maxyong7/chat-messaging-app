@@ -21,11 +21,12 @@ import (
 type conversationRoutes struct {
 	conv usecase.Conversation
 	up   usecase.UserProfile
+	msg  usecase.Message
 	l    logger.Interface
 }
 
-func newConversationRoute(handler *gin.RouterGroup, c usecase.Conversation, up usecase.UserProfile, l logger.Interface) {
-	route := &conversationRoutes{c, up, l}
+func newConversationRoute(handler *gin.RouterGroup, c usecase.Conversation, up usecase.UserProfile, msg usecase.Message, l logger.Interface) {
+	route := &conversationRoutes{c, up, msg, l}
 	hub := NewHub()
 	go hub.Run()
 
@@ -217,7 +218,7 @@ func (c *Client) readPump() {
 			fmt.Println("readPump - Error ReadJSON", err)
 			break
 		}
-		c.handleConversation(msgReq, c.UserInfo.UserUUID)
+		c.handleConversation(msgReq, c.UserInfo)
 	}
 }
 
@@ -272,9 +273,9 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, senderUUID string) {
+func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, userInfo entity.UserInfo) {
 	conv := entity.Conversation{
-		SenderUUID:       senderUUID,
+		SenderUUID:       userInfo.UserUUID,
 		ConversationUUID: c.ID,
 	}
 	ctx := context.Background()
@@ -292,30 +293,32 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, s
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		msgResponse := conversationMessageToResponse(msg, sendMessageType)
-		c.hub.Broadcast <- msgResponse
+		sendMsgResponse := buildSendMessageResponse(sendMessageType, conv, msg, userInfo)
+		c.hub.Broadcast <- sendMsgResponse
 	case deleteMessageType:
-		msg.Data.ConversationUUID = c.ID
-		valid, err := c.messageRepo.ValidateMessageSentByUser(msg)
+		msg := entity.Message{
+			MessageUUID: convReq.Data.DeleteMessageRequest.MessageUUID,
+		}
+		valid, err := c.route.msg.ValidateMessageSentByUser(ctx, conv, msg)
 		if err != nil {
 			fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
-			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
 		if !valid {
-			errorMsg := c.buildErrorMessage(msg, errOnlyAuthorCanDeleteMsg)
+			errorMsg := c.buildErrorMessage(conv, errOnlyAuthorCanDeleteMsg)
 			c.hub.Broadcast <- errorMsg
 		}
-		err = c.messageRepo.DeleteMessage(msg)
+		err = c.route.msg.DeleteMessage(ctx, conv, msg)
 		if err != nil {
 			fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
-			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		msgResponse := c.buildMessageResponse(msg)
-		c.hub.Broadcast <- msgResponse
+		deleteMsgResponse := buildDeleteMessageResponse(sendMessageType, conv, msg)
+		c.hub.Broadcast <- deleteMsgResponse
 	case addReactionMessageType:
 		err = c.reactionRepo.StoreReaction(msg)
 		if err != nil {
@@ -339,14 +342,30 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, s
 	}
 }
 
-func conversationMessageToResponse(convMsg entity.ConversationMessage, messageType string) boundary.ConversationResponseModel {
+func buildSendMessageResponse(messageType string, conv entity.Conversation, msg entity.Message, userInfo entity.UserInfo) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: messageType,
 		Data: boundary.ConversationResponseData{
-			Conversation: entity.Conversation{
-				SenderUUID:          "",
-				ConversationUUID:    "",
-				ConversationMessage: entity.ConversationMessage{},
+			SenderUUID:       conv.SenderUUID,
+			ConversationUUID: conv.ConversationUUID,
+			SendMessageResponseData: boundary.SendMessageResponseData{
+				SenderFirstName: userInfo.FirstName,
+				SenderLastName:  userInfo.LastName,
+				Content:         msg.Content,
+				MessageUUID:     msg.MessageUUID,
+				CreatedAt:       msg.CreatedAt,
+			},
+		},
+	}
+}
+func buildDeleteMessageResponse(messageType string, conv entity.Conversation, msg entity.Message) boundary.ConversationResponseModel {
+	return boundary.ConversationResponseModel{
+		MessageType: messageType,
+		Data: boundary.ConversationResponseData{
+			SenderUUID:       conv.SenderUUID,
+			ConversationUUID: conv.ConversationUUID,
+			DeleteMessageResponseData: boundary.DeleteMessageResponseData{
+				MessageUUID: msg.MessageUUID,
 			},
 		},
 	}

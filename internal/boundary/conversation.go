@@ -6,7 +6,8 @@ type ConversationRequestModel struct {
 }
 
 type ConversationRequestData struct {
-	SendMessageRequest SendMessageRequest
+	SendMessageRequest   SendMessageRequest
+	DeleteMessageRequest DeleteMessageRequest
 }
 
 type ConversationResponseModel struct {
@@ -15,10 +16,11 @@ type ConversationResponseModel struct {
 }
 
 type ConversationResponseData struct {
-	SenderUUID              string `json:"sender_uuid"`
-	ConversationUUID        string `json:"conversation_uuid"`
-	SendMessageResponseData SendMessageResponseData
-	ErrorResponseData       ErrorResponseData
+	SenderUUID                string `json:"sender_uuid"`
+	ConversationUUID          string `json:"conversation_uuid"`
+	SendMessageResponseData   SendMessageResponseData
+	DeleteMessageResponseData DeleteMessageResponseData
+	ErrorResponseData         ErrorResponseData
 }
 
 // type ResponseReaction struct {
