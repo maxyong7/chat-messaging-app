@@ -391,7 +391,7 @@ func buildReactionResponse(reactionType string, reaction entity.Reaction, conver
 		Data: boundary.ConversationResponseData{
 			SenderUUID:       reaction.SenderUUID,
 			ConversationUUID: conversationUUID,
-			AddReactionResponseData: boundary.ReactionResponseData{
+			ReactionResponseData: boundary.ReactionResponseData{
 				MessageUUID: reaction.MessageUUID,
 				Reaction:    reaction.ReactionType,
 			},
