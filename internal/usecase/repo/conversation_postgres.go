@@ -110,7 +110,7 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 }
 
 // StoreConversation -.
-func (r *ConversationRepo) StoreConversation(msg entity.ConversationMessage) error {
+func (r *ConversationRepo) StoreConversation(conv entity.Conversation, msg entity.Message) error {
 	ctx := context.Background()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
@@ -132,7 +132,7 @@ func (r *ConversationRepo) StoreConversation(msg entity.ConversationMessage) err
 		INSERT INTO messages (message_uuid, conversation_uuid, user_uuid, content, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.Data.MessageUUID, msg.Data.ConversationUUID, msg.Data.SenderUUID, msg.Data.Content, msg.Data.CreatedAt)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.MessageUUID, conv.ConversationUUID, conv.SenderUUID, msg.Content, msg.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}
@@ -151,7 +151,7 @@ func (r *ConversationRepo) StoreConversation(msg entity.ConversationMessage) err
 		title = EXCLUDED.title,
 		last_message_created_at = EXCLUDED.last_message_created_at
 	`
-	_, err = tx.ExecContext(ctx, upsertConversationsSQL, msg.Data.ConversationUUID, msg.Data.Content, msg.Data.SenderUUID, msg.Data.CreatedAt)
+	_, err = tx.ExecContext(ctx, upsertConversationsSQL, conv.ConversationUUID, msg.Content, conv.SenderUUID, msg.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertConversationsSQL query: %w", err)
 	}

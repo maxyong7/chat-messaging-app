@@ -1,21 +1,12 @@
 package boundary
 
-import "github.com/maxyong7/chat-messaging-app/internal/entity"
-
 type ConversationRequestModel struct {
 	MessageType string                  `json:"message_type" binding:"required"`
 	Data        ConversationRequestData `json:"data" binding:"required"`
 }
 
 type ConversationRequestData struct {
-	MessageRequestData
-}
-
-func (r ConversationRequestData) ToMessage(conversationUUID string) entity.ConversationMessage {
-	return entity.ConversationMessage{
-		ConversationUUID: conversationUUID,
-		Content:          r.Content,
-	}
+	SendMessageRequest SendMessageRequest
 }
 
 type ConversationResponseModel struct {
@@ -24,5 +15,16 @@ type ConversationResponseModel struct {
 }
 
 type ConversationResponseData struct {
-	Conversation entity.Conversation
+	SenderUUID              string `json:"sender_uuid"`
+	ConversationUUID        string `json:"conversation_uuid"`
+	SendMessageResponseData SendMessageResponseData
+	ErrorResponseData       ErrorResponseData
+}
+
+// type ResponseReaction struct {
+// 	Reaction string `json:"reaction,omitempty"`
+// }
+
+type ErrorResponseData struct {
+	ErrorMessage string `json:"error_msg"`
 }

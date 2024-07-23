@@ -63,8 +63,8 @@ func (r *messageRoute) getMessagesFromConversation(c *gin.Context) {
 		encodedCursor = encodeCursor(&messages[len(messages)-1].CreatedAt)
 	}
 
-	msgResp := boundary.MessageResponseModel{
-		Data: boundary.MessageResponseData{
+	msgResp := boundary.GetMessageResponseModel{
+		Data: boundary.GetMessageResponseData{
 			Messages: messages,
 		},
 		Pagination: boundary.Pagination{

@@ -20,7 +20,7 @@ func NewMessage(pg *sql.DB) *MessageRepo {
 	return &MessageRepo{pg}
 }
 
-func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error) {
+func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error) {
 	getMessagesSQL := `
 		SELECT
 			m.message_uuid,
@@ -48,9 +48,9 @@ func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestPa
 	defer rows.Close()
 
 	// Process the results.
-	var messages []entity.Message
+	var messages []entity.GetMessageDTO
 	for rows.Next() {
-		var msg entity.Message
+		var msg entity.GetMessageDTO
 		if err := rows.Scan(
 			&msg.MessageUUID,
 			&msg.User.UserUUID,

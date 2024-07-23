@@ -51,7 +51,7 @@ type (
 
 	ConversationRepo interface {
 		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
-		StoreConversation(entity.ConversationMessage) error
+		StoreConversation(conv entity.Conversation, convMsg entity.Message) error
 	}
 
 	Inbox interface {
@@ -74,13 +74,13 @@ type (
 	}
 
 	MessageRepo interface {
-		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error)
+		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
 		ValidateMessageSentByUser(msgReq MessageRequest) (bool, error)
 		DeleteMessage(MessageRequest) error
 	}
 
 	Message interface {
-		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.Message, error)
+		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
 	}
 
 	ReactionRepo interface {

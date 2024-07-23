@@ -73,34 +73,34 @@ type ReactionData struct {
 // 	CreatedAt time.Time `json:"created_at"`
 // }
 
-type MessageResponse struct {
-	MessageType  string       `json:"message_type"`
-	ResponseData ResponseData `json:"data"`
-}
+// type MessageResponse struct {
+// 	MessageType  string       `json:"message_type"`
+// 	ResponseData ResponseData `json:"data"`
+// }
 
-type ResponseData struct {
-	MessageUUID      string `json:"message_uuid,omitempty"`
-	ConversationUUID string `json:"conversation_uuid"`
-	ResponseReaction
-	ResponseMessage
-	ResponseError
-}
+// type ResponseData struct {
+// 	MessageUUID      string `json:"message_uuid,omitempty"`
+// 	ConversationUUID string `json:"conversation_uuid"`
+// 	ResponseReaction
+// 	ResponseMessage
+// 	ResponseError
+// }
 
-type ResponseReaction struct {
-	Reaction string `json:"reaction,omitempty"`
-}
+// type ResponseReaction struct {
+// 	Reaction string `json:"reaction,omitempty"`
+// }
 
-type ResponseMessage struct {
-	SenderFirstName string    `json:"sender_first_name"`
-	SenderLastName  string    `json:"sender_last_name"`
-	Content         string    `json:"content"`
-	CreatedAt       time.Time `json:"created_at"`
-}
+// type ResponseMessage struct {
+// 	SenderFirstName string    `json:"sender_first_name"`
+// 	SenderLastName  string    `json:"sender_last_name"`
+// 	Content         string    `json:"content"`
+// 	CreatedAt       time.Time `json:"created_at"`
+// }
 
-type ResponseError struct {
-	ErrorMessage string `json:"error_msg"`
-	SenderUUID   string `json:"sender_uuid"`
-}
+// type ResponseError struct {
+// 	ErrorMessage string `json:"error_msg"`
+// 	SenderUUID   string `json:"sender_uuid"`
+// }
 
 type Client struct {
 	ID           string
@@ -286,15 +286,14 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *Client) buildErrorMessage(message MessageRequest, errorMsg string) MessageResponse {
-	return MessageResponse{
+func (c *Client) buildErrorMessage(conv entity.Conversation, errorMsg string) boundary.ConversationResponseModel {
+	return boundary.ConversationResponseModel{
 		MessageType: errorMessageType,
-		ResponseData: ResponseData{
-			MessageUUID:      message.Data.MessageUUID,
-			ConversationUUID: message.Data.ConversationUUID,
-			ResponseError: ResponseError{
+		Data: boundary.ConversationResponseData{
+			SenderUUID:       conv.SenderUUID,
+			ConversationUUID: conv.ConversationUUID,
+			ErrorResponseData: boundary.ErrorResponseData{
 				ErrorMessage: errorMsg,
-				SenderUUID:   c.UserInfo.UserUUID,
 			},
 		},
 	}
@@ -345,15 +344,21 @@ func (uc *ConversationUseCase) ServeWs(c *gin.Context, hub *Hub, userUuid string
 }
 
 func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, senderUUID string) {
+	conv := entity.Conversation{
+		SenderUUID:       senderUUID,
+		ConversationUUID: c.ID,
+	}
 	switch convReq.MessageType {
 	case sendMessageType:
-		msg := convReq.Data.ToMessage(c.ID)
-		msg.MessageUUID = uuid.New().String()
-		msg.CreatedAt = time.Now()
-		err := c.repo.StoreConversation(msg)
+		msg := entity.Message{
+			MessageUUID: uuid.New().String(),
+			Content:     convReq.Data.SendMessageRequest.Content,
+			CreatedAt:   time.Now(),
+		}
+		err := c.repo.StoreConversation(conv, msg)
 		if err != nil {
 			fmt.Println("Conversation - handleConversation - StoreConversation err: ", err)
-			errorMsg := c.buildErrorMessage(msg, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
