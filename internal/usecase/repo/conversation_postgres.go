@@ -110,8 +110,7 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 }
 
 // StoreConversation -.
-func (r *ConversationRepo) StoreConversation(conv entity.Conversation, msg entity.Message) error {
-	ctx := context.Background()
+func (r *ConversationRepo) StoreConversation(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {

@@ -4,7 +4,6 @@ package usecase
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
@@ -45,13 +44,14 @@ type (
 	}
 
 	Conversation interface {
-		ServeWs(*gin.Context, *Hub, string)
+		// ServeWs(*gin.Context, *Hub, string)
 		// ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
+		StoreConversation(ctx context.Context, conv entity.Conversation, msg entity.Message) error
 	}
 
 	ConversationRepo interface {
 		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
-		StoreConversation(conv entity.Conversation, convMsg entity.Message) error
+		StoreConversation(ctx context.Context, conv entity.Conversation, convMsg entity.Message) error
 	}
 
 	Inbox interface {
