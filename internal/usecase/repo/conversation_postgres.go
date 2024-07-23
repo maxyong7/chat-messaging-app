@@ -109,12 +109,12 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	return conversations, nil
 }
 
-// StoreConversation -.
-func (r *ConversationRepo) StoreConversation(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
+// InsertConversationAndMessage -.
+func (r *ConversationRepo) InsertConversationAndMessage(ctx context.Context, convDTO entity.ConversationDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("ConversationRepo - StoreConversation - failed to begin transaction: %w", err)
+		return fmt.Errorf("ConversationRepo - InsertConversationAndMessage - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -131,7 +131,7 @@ func (r *ConversationRepo) StoreConversation(ctx context.Context, conv entity.Co
 		INSERT INTO messages (message_uuid, conversation_uuid, user_uuid, content, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.MessageUUID, conv.ConversationUUID, conv.SenderUUID, msg.Content, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, convDTO.MessageUUID, convDTO.ConversationUUID, convDTO.SenderUUID, convDTO.Content, convDTO.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}
@@ -150,7 +150,7 @@ func (r *ConversationRepo) StoreConversation(ctx context.Context, conv entity.Co
 		title = EXCLUDED.title,
 		last_message_created_at = EXCLUDED.last_message_created_at
 	`
-	_, err = tx.ExecContext(ctx, upsertConversationsSQL, conv.ConversationUUID, msg.Content, conv.SenderUUID, msg.CreatedAt)
+	_, err = tx.ExecContext(ctx, upsertConversationsSQL, convDTO.ConversationUUID, convDTO.Content, convDTO.SenderUUID, convDTO.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertConversationsSQL query: %w", err)
 	}
@@ -158,7 +158,7 @@ func (r *ConversationRepo) StoreConversation(ctx context.Context, conv entity.Co
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ConversationRepo - StoreConversation - failed to commit transaction: %w", err)
+		return fmt.Errorf("ConversationRepo - InsertConversationAndMessage - failed to commit transaction: %w", err)
 	}
 
 	return nil

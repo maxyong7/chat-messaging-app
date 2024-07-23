@@ -71,7 +71,7 @@ func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestPa
 	return messages, nil
 }
 
-func (r *MessageRepo) ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error) {
+func (r *MessageRepo) ValidateMessageSentByUser(ctx context.Context, msg entity.MessageDTO) (bool, error) {
 	validateMessageSQL := `
 		SELECT 1
 		FROM messages 
@@ -79,7 +79,7 @@ func (r *MessageRepo) ValidateMessageSentByUser(ctx context.Context, conv entity
 	`
 
 	var exists int
-	err := r.QueryRowContext(ctx, validateMessageSQL, msg.MessageUUID, conv.SenderUUID).Scan(&exists)
+	err := r.QueryRowContext(ctx, validateMessageSQL, msg.MessageUUID, msg.UserUUID).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
 		return false, fmt.Errorf("MessageRepo - ValidateMessageSentByUser -  validateMessageSQL: %w", err)
 	}
@@ -92,7 +92,7 @@ func (r *MessageRepo) ValidateMessageSentByUser(ctx context.Context, conv entity
 
 }
 
-func (r *MessageRepo) DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
+func (r *MessageRepo) DeleteMessage(ctx context.Context, msg entity.MessageDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -114,7 +114,7 @@ func (r *MessageRepo) DeleteMessage(ctx context.Context, conv entity.Conversatio
 		WHERE message_uuid = $1
 		AND user_uuid = $2
 		`
-	_, err = tx.ExecContext(ctx, deleteMessageSQL, msg.MessageUUID, conv.SenderUUID)
+	_, err = tx.ExecContext(ctx, deleteMessageSQL, msg.MessageUUID, msg.UserUUID)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert deleteMessageSQL query: %w", err)
 	}

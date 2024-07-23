@@ -41,16 +41,24 @@ func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqPa
 	return messages, nil
 }
 
-func (uc *MessageUseCase) DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error {
-	err := uc.msgRepo.DeleteMessage(ctx, conv, msg)
+func (uc *MessageUseCase) DeleteMessage(ctx context.Context, msg entity.Message) error {
+	msgDTO := entity.MessageDTO{
+		UserUUID:    msg.SenderUUID,
+		MessageUUID: msg.MessageUUID,
+	}
+	err := uc.msgRepo.DeleteMessage(ctx, msgDTO)
 	if err != nil {
 		return fmt.Errorf("MessageUseCase - DeleteMessage - uc.msgRepo.DeleteMessage: %w", err)
 	}
 	return nil
 }
 
-func (uc *MessageUseCase) ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error) {
-	valid, err := uc.msgRepo.ValidateMessageSentByUser(ctx, conv, msg)
+func (uc *MessageUseCase) ValidateMessageSentByUser(ctx context.Context, msg entity.Message) (bool, error) {
+	msgDTO := entity.MessageDTO{
+		UserUUID:    msg.SenderUUID,
+		MessageUUID: msg.MessageUUID,
+	}
+	valid, err := uc.msgRepo.ValidateMessageSentByUser(ctx, msgDTO)
 	if err != nil {
 		return false, fmt.Errorf("MessageUseCase - DeleteMessage - uc.msgRepo.DeleteMessage: %w", err)
 	}

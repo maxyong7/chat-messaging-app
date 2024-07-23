@@ -11,12 +11,18 @@ type GetMessageDTO struct {
 }
 
 type Message struct {
-	MessageUUID string    `json:"message_uuid"`
-	Content     string    `json:"content"`
-	CreatedAt   time.Time `json:"created_at"`
+	SenderUUID  string
+	MessageUUID string
+	Content     string
+	CreatedAt   time.Time
 }
 
 type SeenStatus struct {
 	UserInfo
 	SeenTimestamp string `json:"seen_timestamp"`
+}
+
+type MessageDTO struct {
+	UserUUID    string
+	MessageUUID string
 }

@@ -46,12 +46,12 @@ type (
 	Conversation interface {
 		// ServeWs(*gin.Context, *Hub, string)
 		// ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
-		StoreConversation(ctx context.Context, conv entity.Conversation, msg entity.Message) error
+		StoreConversationAndMessage(ctx context.Context, conv entity.Conversation) error
 	}
 
 	ConversationRepo interface {
 		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
-		StoreConversation(ctx context.Context, conv entity.Conversation, convMsg entity.Message) error
+		InsertConversationAndMessage(ctx context.Context, convDTO entity.ConversationDTO) error
 	}
 
 	Inbox interface {
@@ -75,14 +75,14 @@ type (
 
 	MessageRepo interface {
 		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
-		ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error)
-		DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error
+		ValidateMessageSentByUser(ctx context.Context, msg entity.MessageDTO) (bool, error)
+		DeleteMessage(ctx context.Context, msg entity.MessageDTO) error
 	}
 
 	Message interface {
 		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
-		DeleteMessage(ctx context.Context, conv entity.Conversation, msg entity.Message) error
-		ValidateMessageSentByUser(ctx context.Context, conv entity.Conversation, msg entity.Message) (bool, error)
+		DeleteMessage(ctx context.Context, msg entity.Message) error
+		ValidateMessageSentByUser(ctx context.Context, msg entity.Message) (bool, error)
 	}
 
 	ReactionRepo interface {

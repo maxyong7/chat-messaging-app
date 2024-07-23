@@ -275,50 +275,51 @@ var upgrader = websocket.Upgrader{
 }
 
 func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, userInfo entity.UserInfo) {
-	conv := entity.Conversation{
-		SenderUUID:       userInfo.UserUUID,
-		ConversationUUID: c.ID,
-	}
+	senderUUID := userInfo.UserUUID
+	conversationUUID := c.ID
 	ctx := context.Background()
 	switch convReq.MessageType {
 	case sendMessageType:
-		msg := entity.Message{
-			MessageUUID: uuid.New().String(),
-			Content:     convReq.Data.SendMessageRequest.Content,
-			CreatedAt:   time.Now(),
+		conv := entity.Conversation{
+			SenderUUID:       userInfo.UserUUID,
+			ConversationUUID: c.ID,
+			MessageUUID:      uuid.New().String(),
+			Content:          convReq.Data.SendMessageRequest.Content,
+			CreatedAt:        time.Now(),
 		}
-		err := c.route.conv.StoreConversation(ctx, conv, msg)
+		err := c.route.conv.StoreConversationAndMessage(ctx, conv)
 		if err != nil {
 			fmt.Println("Conversation - handleConversation - StoreConversation err: ", err)
-			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		sendMsgResponse := buildSendMessageResponse(conv, msg, userInfo)
+		sendMsgResponse := buildSendMessageResponse(conv, userInfo)
 		c.hub.Broadcast <- sendMsgResponse
 	case deleteMessageType:
 		msg := entity.Message{
+			SenderUUID:  senderUUID,
 			MessageUUID: convReq.Data.DeleteMessageRequest.MessageUUID,
 		}
-		valid, err := c.route.msg.ValidateMessageSentByUser(ctx, conv, msg)
+		valid, err := c.route.msg.ValidateMessageSentByUser(ctx, msg)
 		if err != nil {
 			fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
-			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
 		if !valid {
-			errorMsg := c.buildErrorMessage(conv, errOnlyAuthorCanDeleteMsg)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errOnlyAuthorCanDeleteMsg)
 			c.hub.Broadcast <- errorMsg
 		}
-		err = c.route.msg.DeleteMessage(ctx, conv, msg)
+		err = c.route.msg.DeleteMessage(ctx, msg)
 		if err != nil {
 			fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
-			errorMsg := c.buildErrorMessage(conv, errProcessingMessage)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		deleteMsgResponse := buildDeleteMessageResponse(conv, msg)
+		deleteMsgResponse := buildDeleteMessageResponse(msg, conversationUUID)
 		c.hub.Broadcast <- deleteMsgResponse
 	case addReactionMessageType:
 		reaction := entity.Reaction{
@@ -329,11 +330,11 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		err := c.route.reaction.StoreReaction(ctx, reaction)
 		if err != nil {
 			fmt.Println("Conversation - readPump - StoreReaction err: ", err)
-			errorMsg := c.buildErrorMessage(conv, errProcessingReaction)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		addReactionResponse := buildReactionResponse(addReactionMessageType, conv, reaction)
+		addReactionResponse := buildReactionResponse(addReactionMessageType, reaction, conversationUUID)
 		c.hub.Broadcast <- addReactionResponse
 	case removeReactionMessageType:
 		reaction := entity.Reaction{
@@ -344,16 +345,16 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		err := c.route.reaction.RemoveReaction(ctx, reaction)
 		if err != nil {
 			fmt.Println("Conversation - readPump - RemoveReaction err: ", err)
-			errorMsg := c.buildErrorMessage(conv, errProcessingReaction)
+			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingReaction)
 			c.hub.Broadcast <- errorMsg
 			break
 		}
-		removeReactionResponse := buildReactionResponse(removeReactionMessageType, conv, reaction)
+		removeReactionResponse := buildReactionResponse(removeReactionMessageType, reaction, conversationUUID)
 		c.hub.Broadcast <- removeReactionResponse
 	}
 }
 
-func buildSendMessageResponse(conv entity.Conversation, msg entity.Message, userInfo entity.UserInfo) boundary.ConversationResponseModel {
+func buildSendMessageResponse(conv entity.Conversation, userInfo entity.UserInfo) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: sendMessageType,
 		Data: boundary.ConversationResponseData{
@@ -362,20 +363,21 @@ func buildSendMessageResponse(conv entity.Conversation, msg entity.Message, user
 			SendMessageResponseData: boundary.SendMessageResponseData{
 				SenderFirstName: userInfo.FirstName,
 				SenderLastName:  userInfo.LastName,
-				Content:         msg.Content,
-				MessageUUID:     msg.MessageUUID,
-				CreatedAt:       msg.CreatedAt,
+				SenderAvatar:    userInfo.Avatar,
+				Content:         conv.Content,
+				MessageUUID:     conv.MessageUUID,
+				CreatedAt:       conv.CreatedAt,
 			},
 		},
 	}
 }
 
-func buildDeleteMessageResponse(conv entity.Conversation, msg entity.Message) boundary.ConversationResponseModel {
+func buildDeleteMessageResponse(msg entity.Message, conversationUUID string) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: deleteMessageType,
 		Data: boundary.ConversationResponseData{
-			SenderUUID:       conv.SenderUUID,
-			ConversationUUID: conv.ConversationUUID,
+			SenderUUID:       msg.SenderUUID,
+			ConversationUUID: conversationUUID,
 			DeleteMessageResponseData: boundary.DeleteMessageResponseData{
 				MessageUUID: msg.MessageUUID,
 			},
@@ -383,12 +385,12 @@ func buildDeleteMessageResponse(conv entity.Conversation, msg entity.Message) bo
 	}
 }
 
-func buildReactionResponse(reactionType string, conv entity.Conversation, reaction entity.Reaction) boundary.ConversationResponseModel {
+func buildReactionResponse(reactionType string, reaction entity.Reaction, conversationUUID string) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: reactionType,
 		Data: boundary.ConversationResponseData{
-			SenderUUID:       conv.SenderUUID,
-			ConversationUUID: conv.ConversationUUID,
+			SenderUUID:       reaction.SenderUUID,
+			ConversationUUID: conversationUUID,
 			AddReactionResponseData: boundary.ReactionResponseData{
 				MessageUUID: reaction.MessageUUID,
 				Reaction:    reaction.ReactionType,
@@ -397,12 +399,12 @@ func buildReactionResponse(reactionType string, conv entity.Conversation, reacti
 	}
 }
 
-func (c *Client) buildErrorMessage(conv entity.Conversation, errorMsg string) boundary.ConversationResponseModel {
+func (c *Client) buildErrorMessage(senderUUID string, conversationUUID string, errorMsg string) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: errorMessageType,
 		Data: boundary.ConversationResponseData{
-			SenderUUID:       conv.SenderUUID,
-			ConversationUUID: conv.ConversationUUID,
+			SenderUUID:       senderUUID,
+			ConversationUUID: conversationUUID,
 			ErrorResponseData: boundary.ErrorResponseData{
 				ErrorMessage: errorMsg,
 			},

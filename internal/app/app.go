@@ -53,9 +53,6 @@ func Run(cfg *config.Config) {
 	)
 	conversationUseCase := usecase.NewConversation(
 		repo.NewConversation(pg),
-		userInfoRepo,
-		repo.NewReaction(pg),
-		repo.NewMessage(pg),
 	)
 	inboxUseCase := usecase.NewInbox(
 		repo.NewConversation(pg),

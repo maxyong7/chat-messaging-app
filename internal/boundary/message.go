@@ -17,6 +17,7 @@ type DeleteMessageRequest struct {
 type SendMessageResponseData struct {
 	SenderFirstName string    `json:"sender_first_name"`
 	SenderLastName  string    `json:"sender_last_name"`
+	SenderAvatar    string    `json:"sender_avatar"`
 	Content         string    `json:"content"`
 	MessageUUID     string    `json:"message_uuid"`
 	CreatedAt       time.Time `json:"created_at"`

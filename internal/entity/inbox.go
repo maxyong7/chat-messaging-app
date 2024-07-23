@@ -11,12 +11,3 @@ type Conversations struct {
 	LastMessageCreatedAt *time.Time `json:"last_message_created_at"`
 	Type                 *string    `json:"type"`
 }
-
-type ConversationDTO struct {
-	ConversationUUID     string    `db:"conversation_uuid"`
-	LastMessage          string    `db:"last_message"`
-	LastSentUserUUID     string    `db:"last_sent_user_uuid"`
-	Title                string    `db:"title"`
-	LastMessageCreatedAt time.Time `db:"last_message_created_at"`
-	ConversationType     string    `db:"conversation_type"`
-}
