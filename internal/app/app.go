@@ -75,6 +75,9 @@ func Run(cfg *config.Config) {
 	userProfileUseCase := usecase.NewUserProfile(
 		repo.NewUserInfo(pg),
 	)
+	reactionUseCase := usecase.NewReaction(
+		repo.NewReaction(pg),
+	)
 
 	// // RabbitMQ RPC Server
 	// rmqRouter := amqprpc.NewRouter(translationUseCase)
@@ -94,6 +97,7 @@ func Run(cfg *config.Config) {
 		Message:      messageUseCase,
 		GroupChat:    groupChatUseCase,
 		UserProfile:  userProfileUseCase,
+		Reaction:     reactionUseCase,
 	}
 	v1.NewRouter(handler, l, routerUseCase)
 

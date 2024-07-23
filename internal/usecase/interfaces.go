@@ -86,9 +86,14 @@ type (
 	}
 
 	ReactionRepo interface {
-		StoreReaction(MessageRequest) error
-		GetReactions(ctx context.Context, messageUUID string) ([]entity.Reaction, error)
-		RemoveReaction(msg MessageRequest) error
+		StoreReaction(ctx context.Context, srDTO entity.StoreReactionDTO) error
+		GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReaction, error)
+		RemoveReaction(ctx context.Context, rr entity.RemoveReactionDTO) error
+	}
+
+	Reaction interface {
+		StoreReaction(ctx context.Context, reaction entity.Reaction) error
+		RemoveReaction(ctx context.Context, reaction entity.Reaction) error
 	}
 
 	GroupChatRepo interface {
