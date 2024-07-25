@@ -7,3 +7,9 @@ type RequestParams struct {
 	Limit  int       `json:"limit"`
 	UserID string    `json:"user_uuid"`
 }
+
+type RequestParamsDTO struct {
+	Cursor time.Time
+	Limit  int
+	UserID string
+}

@@ -46,16 +46,13 @@ type (
 	Conversation interface {
 		// ServeWs(*gin.Context, *Hub, string)
 		// ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
+		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
 		StoreConversationAndMessage(ctx context.Context, conv entity.Conversation) error
 	}
 
 	ConversationRepo interface {
-		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
+		GetConversations(context.Context, entity.RequestParamsDTO) ([]entity.Conversations, error)
 		InsertConversationAndMessage(ctx context.Context, convDTO entity.ConversationDTO) error
-	}
-
-	Inbox interface {
-		GetInbox(context.Context, entity.RequestParams) ([]entity.Conversations, error)
 	}
 
 	Contact interface {

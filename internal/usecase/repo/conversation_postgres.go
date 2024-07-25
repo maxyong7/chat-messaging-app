@@ -20,7 +20,7 @@ func NewConversation(pg *sql.DB) *ConversationRepo {
 	return &ConversationRepo{pg}
 }
 
-func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
+func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity.RequestParamsDTO) ([]entity.Conversations, error) {
 	// Define the SQL query.
 	query := `
 		WITH combined_conversations AS (

@@ -34,7 +34,8 @@ func newConversationRoute(handler *gin.RouterGroup, c usecase.Conversation, up u
 
 	h := handler.Group("/conversation")
 	{
-		h.GET("/ws/:conversationId", route.ServeWsController(hub))
+		h.GET("", route.getConversations)
+		h.GET("/ws/:conversationId", route.serveWsController(hub))
 		// h.GET("/ws/:clientId", func(c *gin.Context) {
 
 		// 	route.t.ServeWs(c, hub)
@@ -49,6 +50,51 @@ func newConversationRoute(handler *gin.RouterGroup, c usecase.Conversation, up u
 	}
 }
 
+func (r *conversationRoutes) getConversations(c *gin.Context) {
+	cursor, err := queryParamCursor(c)
+	if err != nil {
+		r.l.Error(err, "http - v1 - getConversations - cursor validation error")
+		handleCustomErrors(c, err)
+	}
+	limit := queryParamInt(c, "limit", 20)
+
+	userId, err := getUserUUIDFromContext(c)
+	if err != nil {
+		errorResponse(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	requestParams := entity.RequestParams{
+		Cursor: cursor,
+		Limit:  limit,
+		UserID: userId,
+	}
+
+	conversations, err := r.conv.GetConversations(c.Request.Context(), requestParams)
+	if err != nil {
+		r.l.Error(err, "http - v1 - getConversations - getConversations")
+		handleCustomErrors(c, err)
+		return
+	}
+
+	var encodedCursor string
+	if len(conversations) == limit {
+		encodedCursor = encodeCursor(conversations[len(conversations)-1].LastMessageCreatedAt)
+	}
+
+	conversationResp := boundary.InboxResponseModel{
+		Data: boundary.InboxData{
+			Conversations: conversations,
+		},
+		Pagination: boundary.Pagination{
+			Cursor: encodedCursor,
+			Limit:  limit,
+		},
+	}
+
+	c.JSON(http.StatusOK, conversationResp)
+}
+
 type Client struct {
 	ID       string
 	UserInfo entity.UserInfo
@@ -58,7 +104,7 @@ type Client struct {
 	route    *conversationRoutes
 }
 
-func (r *conversationRoutes) ServeWsController(hub *Hub) gin.HandlerFunc {
+func (r *conversationRoutes) serveWsController(hub *Hub) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userUUID, err := getUserUUIDFromContext(c)
 		if err != nil {

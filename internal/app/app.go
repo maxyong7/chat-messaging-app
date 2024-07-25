@@ -54,9 +54,6 @@ func Run(cfg *config.Config) {
 	conversationUseCase := usecase.NewConversation(
 		repo.NewConversation(pg),
 	)
-	inboxUseCase := usecase.NewInbox(
-		repo.NewConversation(pg),
-	)
 	contactUseCase := usecase.NewContacts(
 		repo.NewContacts(pg),
 		userInfoRepo,
@@ -89,7 +86,6 @@ func Run(cfg *config.Config) {
 	routerUseCase := v1.RouterUseCases{
 		Verification: verificationUseCase,
 		Conversation: conversationUseCase,
-		Inbox:        inboxUseCase,
 		Contact:      contactUseCase,
 		Message:      messageUseCase,
 		GroupChat:    groupChatUseCase,
