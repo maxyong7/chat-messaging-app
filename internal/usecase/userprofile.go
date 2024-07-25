@@ -31,7 +31,8 @@ func (uc *UserProfileUseCase) GetUserInfo(ctx context.Context, userUUID string) 
 }
 
 func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userInfo entity.UserInfo) error {
-	err := uc.repo.UpdateUserInfo(ctx, userInfo)
+	userInfoDTO := entity.UserInfoDTO(userInfo)
+	err := uc.repo.UpdateUserInfo(ctx, userInfoDTO)
 	if err != nil {
 		return fmt.Errorf("UserProfileUseCase - UpdateUserProfile - UpdateUserProfile: %w", err)
 	}

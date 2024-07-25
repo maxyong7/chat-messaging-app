@@ -40,7 +40,7 @@ type (
 		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
 		GetUserUUIDByUsername(context.Context, string) (*string, error)
-		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfo) error
+		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error
 	}
 
 	Conversation interface {

@@ -152,7 +152,7 @@ func (r *UserInfoRepo) GetUserUUIDByUsername(ctx context.Context, userName strin
 }
 
 // UpdateUserInfo -.
-func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfo) error {
+func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
