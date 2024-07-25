@@ -9,15 +9,13 @@ import (
 
 // LoginUseCase -.
 type LoginUseCase struct {
-	repo   UserRepo
-	webAPI TranslationWebAPI
+	repo UserRepo
 }
 
 // New -.
-func NewAuth(r UserRepo, w TranslationWebAPI) *LoginUseCase {
+func NewAuth(r UserRepo) *LoginUseCase {
 	return &LoginUseCase{
-		repo:   r,
-		webAPI: w,
+		repo: r,
 	}
 }
 

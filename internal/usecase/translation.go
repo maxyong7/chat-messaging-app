@@ -1,18 +1,18 @@
 package usecase
 
-// TranslationUseCase -.
-type TranslationUseCase struct {
-	repo   TranslationRepo
-	webAPI TranslationWebAPI
-}
+// // TranslationUseCase -.
+// type TranslationUseCase struct {
+// 	repo   TranslationRepo
+// 	webAPI TranslationWebAPI
+// }
 
-// New -.
-func New(r TranslationRepo, w TranslationWebAPI) *TranslationUseCase {
-	return &TranslationUseCase{
-		repo:   r,
-		webAPI: w,
-	}
-}
+// // New -.
+// func New(r TranslationRepo, w TranslationWebAPI) *TranslationUseCase {
+// 	return &TranslationUseCase{
+// 		repo:   r,
+// 		webAPI: w,
+// 	}
+// }
 
 // // History - getting translate history from store.
 // func (uc *TranslationUseCase) History(ctx context.Context) ([]entity.Translation, error) {
