@@ -94,18 +94,18 @@ type (
 	}
 
 	GroupChatRepo interface {
-		CreateGroupChat(ctx context.Context, groupChat entity.GroupChatRequest) error
-		AddParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
-		RemoveParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error
-		UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatRequest) error
+		CreateGroupChat(ctx context.Context, groupChat entity.GroupChatDTO) error
+		AddParticipants(ctx context.Context, groupChat entity.GroupChatDTO) error
+		RemoveParticipants(ctx context.Context, groupChat entity.GroupChatDTO) error
+		UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatDTO) error
 		ValidateUserInGroupChat(ctx context.Context, conversationUUID string, userUUID string) (bool, error)
 	}
 
 	GroupChat interface {
-		CreateGroupChat(ctx context.Context, groupChatReq entity.GroupChatRequest) error
-		AddParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
-		RemoveParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error
-		UpdateGroupTitle(ctx context.Context, groupChatReq entity.GroupChatRequest) error
+		CreateGroupChat(ctx context.Context, groupChat entity.GroupChat) error
+		AddParticipant(ctx context.Context, groupChat entity.GroupChat) error
+		RemoveParticipant(ctx context.Context, groupChat entity.GroupChat) error
+		UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChat) error
 	}
 
 	UserProfile interface {

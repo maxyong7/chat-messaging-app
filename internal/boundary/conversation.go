@@ -1,6 +1,10 @@
 package boundary
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/maxyong7/chat-messaging-app/internal/entity"
+)
 
 type ConversationRequestModel struct {
 	MessageType string          `json:"message_type" binding:"required"`
@@ -12,6 +16,15 @@ type ConversationRequestModel struct {
 // 	DeleteMessageRequest
 // 	AddReactionRequest
 // }
+
+type GetConversationsResponseModel struct {
+	Data       GetConversationsData `json:"data"`
+	Pagination Pagination           `json:"pagination"`
+}
+
+type GetConversationsData struct {
+	Conversations []entity.Conversations `json:"conversations"`
+}
 
 type ConversationResponseModel struct {
 	MessageType string                   `json:"message_type"`

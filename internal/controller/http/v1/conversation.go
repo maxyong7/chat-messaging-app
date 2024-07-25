@@ -82,8 +82,8 @@ func (r *conversationRoutes) getConversations(c *gin.Context) {
 		encodedCursor = encodeCursor(conversations[len(conversations)-1].LastMessageCreatedAt)
 	}
 
-	conversationResp := boundary.InboxResponseModel{
-		Data: boundary.InboxData{
+	conversationResp := boundary.GetConversationsResponseModel{
+		Data: boundary.GetConversationsData{
 			Conversations: conversations,
 		},
 		Pagination: boundary.Pagination{

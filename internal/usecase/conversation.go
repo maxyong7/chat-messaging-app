@@ -7,10 +7,10 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
-)
+// var (
+// 	newline = []byte{'\n'}
+// 	space   = []byte{' '}
+// )
 
 // ConversationUseCase -.
 type ConversationUseCase struct {
