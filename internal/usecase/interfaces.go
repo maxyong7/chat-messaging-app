@@ -71,7 +71,7 @@ type (
 	}
 
 	MessageRepo interface {
-		GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
+		GetMessages(ctx context.Context, reqParam entity.RequestParamsDTO, conversationUUID string) ([]entity.GetMessageDTO, error)
 		ValidateMessageSentByUser(ctx context.Context, msg entity.MessageDTO) (bool, error)
 		DeleteMessage(ctx context.Context, msg entity.MessageDTO) error
 	}

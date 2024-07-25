@@ -22,7 +22,8 @@ func NewMessage(m MessageRepo, r ReactionRepo) *MessageUseCase {
 }
 
 func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error) {
-	messages, err := uc.msgRepo.GetMessages(ctx, reqParam, conversationUUID)
+	reqParamDTO := entity.RequestParamsDTO(reqParam)
+	messages, err := uc.msgRepo.GetMessages(ctx, reqParamDTO, conversationUUID)
 	if err != nil {
 		return nil, fmt.Errorf("MessageUseCase - GetMessages - uc.msgRepo.GetMessages: %w", err)
 	}

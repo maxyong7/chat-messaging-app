@@ -19,7 +19,7 @@ func NewMessage(pg *sql.DB) *MessageRepo {
 	return &MessageRepo{pg}
 }
 
-func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error) {
+func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestParamsDTO, conversationUUID string) ([]entity.GetMessageDTO, error) {
 	getMessagesSQL := `
 		SELECT
 			m.message_uuid,
