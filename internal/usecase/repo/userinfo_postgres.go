@@ -21,7 +21,7 @@ func NewUserInfo(pg *sql.DB) *UserInfoRepo {
 }
 
 // GetUserCredentials -.
-func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserCredentialsDTO, error) {
+func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.UserCredentialsDTO) (*entity.UserCredentialsDTO, error) {
 	getUserCredentialsSQL := `
 		SELECT email, username, password, user_uuid
 		FROM user_credentials
@@ -42,7 +42,7 @@ func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.U
 }
 
 // StoreUserInfo -.
-func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistration) error {
+func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistrationDTO) error {
 	userUuid := uuid.New()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
@@ -88,7 +88,7 @@ func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserR
 }
 
 // CheckUserExist -.
-func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
+func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistrationDTO) (bool, error) {
 	// Check if the user already exists
 	checkUserExistSQL := `
 	SELECT 1 

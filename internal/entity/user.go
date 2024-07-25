@@ -16,6 +16,15 @@ type UserRegistration struct {
 	Avatar    string
 }
 
+type UserRegistrationDTO struct {
+	Username  string
+	Password  string
+	Email     string
+	FirstName string
+	LastName  string
+	Avatar    string
+}
+
 type UserCredentialsDTO struct {
 	ID       int    `db:"id"`
 	Username string `db:"username"`

@@ -23,7 +23,12 @@ func NewAuth(r UserRepo, w TranslationWebAPI) *LoginUseCase {
 
 // VerifyCredentials -.
 func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (string, bool, error) {
-	userInfo, err := uc.repo.GetUserCredentials(ctx, v)
+	userCredentialsDTO := entity.UserCredentialsDTO{
+		Username: v.Username,
+		Password: v.Password,
+		Email:    v.Email,
+	}
+	userInfo, err := uc.repo.GetUserCredentials(ctx, userCredentialsDTO)
 	if err != nil {
 		return "", false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
 	}
@@ -40,7 +45,15 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCred
 
 // RegisterUser -.
 func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
-	exist, err := uc.repo.CheckUserExist(ctx, userRegistration)
+	userRegistrationDTO := entity.UserRegistrationDTO{
+		Username:  userRegistration.Username,
+		Password:  userRegistration.Password,
+		Email:     userRegistration.Email,
+		FirstName: userRegistration.FirstName,
+		LastName:  userRegistration.LastName,
+		Avatar:    userRegistration.Avatar,
+	}
+	exist, err := uc.repo.CheckUserExist(ctx, userRegistrationDTO)
 	if err != nil {
 		return err
 	}
@@ -49,7 +62,7 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 		return entity.ErrUserAlreadyExists
 	}
 
-	err = uc.repo.StoreUserInfo(context.Background(), userRegistration)
+	err = uc.repo.StoreUserInfo(context.Background(), userRegistrationDTO)
 	if err != nil {
 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)
 	}

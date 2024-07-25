@@ -35,9 +35,9 @@ type (
 
 	// UserRepo -.
 	UserRepo interface {
-		GetUserCredentials(context.Context, entity.UserCredentials) (*entity.UserCredentialsDTO, error)
-		StoreUserInfo(context.Context, entity.UserRegistration) error
-		CheckUserExist(context.Context, entity.UserRegistration) (bool, error)
+		GetUserCredentials(context.Context, entity.UserCredentialsDTO) (*entity.UserCredentialsDTO, error)
+		StoreUserInfo(context.Context, entity.UserRegistrationDTO) error
+		CheckUserExist(context.Context, entity.UserRegistrationDTO) (bool, error)
 		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
 		GetUserUUIDByUsername(context.Context, string) (*string, error)
 		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error
