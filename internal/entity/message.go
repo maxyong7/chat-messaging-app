@@ -33,3 +33,11 @@ type MessageDTO struct {
 	UserUUID    string
 	MessageUUID string
 }
+
+type SearchMessageDTO struct {
+	MessageUUID string      `json:"message_uuid"`
+	Content     string      `json:"content"`
+	CreatedAt   time.Time   `json:"created_at"`
+	User        UserInfoDTO `json:"user"`
+	Cursor      string      `json:"cursor"`
+}

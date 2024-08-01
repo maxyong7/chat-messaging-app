@@ -211,3 +211,53 @@ func (r *MessageRepo) GetSeenStatus(ctx context.Context, messageUUID string) ([]
 
 	return seenStatuses, nil
 }
+
+func (r *MessageRepo) SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error) {
+	getMessagesSQL := `
+		SELECT
+			m.message_uuid,
+			m.user_uuid,
+			m.content,
+			m.created_at,
+			ui.first_name,
+			ui.last_name,
+			ui.avatar
+		FROM messages m
+		LEFT JOIN user_info ui ON m.user_uuid = ui.user_uuid
+		LEFT JOIN reaction r ON m.message_uuid = r.message_uuid
+		WHERE m.content ILIKE '%' || $1 || '%' 
+		AND m.conversation_uuid = $2
+	`
+
+	// Execute the final query.
+	rows, err := r.QueryContext(ctx, getMessagesSQL, keyword, conversationUUID)
+	if err != nil {
+		fmt.Println("GetMessages - getMessagesSQL err: ", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Process the results.
+	var messages []entity.SearchMessageDTO
+	for rows.Next() {
+		var msg entity.SearchMessageDTO
+		if err := rows.Scan(
+			&msg.MessageUUID,
+			&msg.User.UserUUID,
+			&msg.Content,
+			&msg.CreatedAt,
+			&msg.User.FirstName,
+			&msg.User.LastName,
+			&msg.User.Avatar,
+		); err != nil {
+			fmt.Println("GetConversations - rows.Scan err: ", err)
+			return nil, err
+		}
+		messages = append(messages, msg)
+	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("GetConversations - rows.Err(): ", err)
+	}
+
+	return messages, nil
+}

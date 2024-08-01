@@ -2,7 +2,10 @@ package usecase
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
@@ -53,12 +56,26 @@ func (uc *MessageUseCase) UpdateSeenStatus(ctx context.Context, seenStatus entit
 	}
 	return nil
 }
+
 func (uc *MessageUseCase) GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error) {
 	seenStatus, err := uc.msgRepo.GetSeenStatus(ctx, messageUUID)
 	if err != nil {
 		return nil, fmt.Errorf("MessageUseCase - GetSeenStatus - uc.msgRepo.GetSeenStatus: %w", err)
 	}
 	return seenStatus, nil
+}
+
+func (uc *MessageUseCase) SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error) {
+	messages, err := uc.msgRepo.SearchMessage(ctx, keyword, conversationUUID)
+	if err != nil {
+		return nil, fmt.Errorf("MessageUseCase - GetSeenStatus - uc.msgRepo.GetSeenStatus: %w", err)
+	}
+
+	for i, msg := range messages {
+		inclusiveCursorTime := msg.CreatedAt.Add(-1 * time.Millisecond)
+		messages[i].Cursor = encodeCursor(&inclusiveCursorTime)
+	}
+	return messages, nil
 }
 
 func (uc *MessageUseCase) DeleteMessage(ctx context.Context, msg entity.Message) error {
@@ -83,4 +100,19 @@ func (uc *MessageUseCase) ValidateMessageSentByUser(ctx context.Context, msg ent
 		return false, fmt.Errorf("MessageUseCase - DeleteMessage - uc.msgRepo.DeleteMessage: %w", err)
 	}
 	return valid, nil
+}
+
+func encodeCursor(cursor *time.Time) string {
+	if cursor == nil {
+		return ""
+	}
+	if cursor.IsZero() {
+		return ""
+	}
+	serializedCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return ""
+	}
+	encodedCursor := base64.StdEncoding.EncodeToString(serializedCursor)
+	return encodedCursor
 }

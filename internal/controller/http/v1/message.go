@@ -22,6 +22,7 @@ func newMessageRoute(handler *gin.RouterGroup, t usecase.Message, l logger.Inter
 	h := handler.Group("/message")
 	{
 		h.GET("/:conversation_uuid", route.getMessagesFromConversation)
+		h.GET("/:conversation_uuid/search", route.searchMessage)
 		h.GET("/status/:message_uuid", route.getMessageStatus)
 	}
 }
@@ -86,6 +87,34 @@ func (r *messageRoute) getMessagesFromConversation(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, msgResp)
+}
+
+func (r *messageRoute) searchMessage(c *gin.Context) {
+	convUUID := c.Param("conversation_uuid")
+	if convUUID == "" {
+		errorResponse(c, http.StatusUnprocessableEntity, "missing conversation_uuid")
+		return
+	}
+
+	keyword, ok := c.GetQuery("keyword")
+	if keyword == "" || !ok {
+		errorResponse(c, http.StatusUnprocessableEntity, "keyword query missing")
+		return
+	}
+	messages, err := r.t.SearchMessage(c.Request.Context(), keyword, convUUID)
+	if err != nil {
+		r.l.Error(err, "http - v1 - getMessagesFromConversation - GetMessagesFromConversation")
+		handleCustomErrors(c, err)
+		return
+	}
+
+	searchMsgResp := boundary.SearchMessageResponseModel{
+		Data: boundary.SearchMessageResponseData{
+			Messages: messages,
+		},
+	}
+
+	c.JSON(http.StatusOK, searchMsgResp)
 }
 
 func (r *messageRoute) getMessageStatus(c *gin.Context) {

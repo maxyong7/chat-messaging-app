@@ -59,6 +59,7 @@ type (
 		DeleteMessage(ctx context.Context, msg entity.MessageDTO) error
 		UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatusDTO) error
 		GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error)
+		SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error)
 	}
 
 	Message interface {
@@ -67,6 +68,7 @@ type (
 		ValidateMessageSentByUser(ctx context.Context, msg entity.Message) (bool, error)
 		UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatus) error
 		GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error)
+		SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error)
 	}
 
 	ReactionRepo interface {

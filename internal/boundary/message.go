@@ -38,3 +38,11 @@ type GetMessageResponseData struct {
 type GetSeenStatusResponseModel struct {
 	SeenStatus []entity.GetSeenStatusDTO `json:"seen_status"`
 }
+
+type SearchMessageResponseModel struct {
+	Data SearchMessageResponseData `json:"data"`
+}
+
+type SearchMessageResponseData struct {
+	Messages []entity.SearchMessageDTO `json:"messages"`
+}
