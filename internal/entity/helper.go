@@ -1,6 +1,8 @@
 package entity
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type NullString struct {
 	sql.NullString

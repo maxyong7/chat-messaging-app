@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // LoginUseCase -.
@@ -20,11 +21,11 @@ func NewAuth(r UserRepo) *LoginUseCase {
 }
 
 // VerifyCredentials -.
-func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCredentials) (string, bool, error) {
+func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials entity.UserCredentials) (string, bool, error) {
 	userCredentialsDTO := entity.UserCredentialsDTO{
-		Username: v.Username,
-		Password: v.Password,
-		Email:    v.Email,
+		Username: userCredentials.Username,
+		Password: userCredentials.Password,
+		Email:    userCredentials.Email,
 	}
 	userInfo, err := uc.repo.GetUserCredentials(ctx, userCredentialsDTO)
 	if err != nil {
@@ -35,17 +36,26 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, v entity.UserCred
 		return "", false, entity.ErrUserNotFound
 	}
 
-	if userInfo.Password == v.Password {
+	hashedPassword, err := hashPassword(userCredentialsDTO.Password)
+	if err != nil {
+		return "", false, err
+	}
+	match := verifyPassword(hashedPassword, userInfo.Password)
+	if match {
 		return userInfo.UserUuid, true, nil
 	}
-	return "", false, nil
+	return "", false, entity.ErrIncorrectPassword
 }
 
 // RegisterUser -.
 func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
+	hashedPassword, err := hashPassword(userRegistration.Password)
+	if err != nil {
+		return err
+	}
 	userRegistrationDTO := entity.UserRegistrationDTO{
 		Username:  userRegistration.Username,
-		Password:  userRegistration.Password,
+		Password:  hashedPassword,
 		Email:     userRegistration.Email,
 		FirstName: userRegistration.FirstName,
 		LastName:  userRegistration.LastName,
@@ -65,4 +75,14 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)
 	}
 	return nil
+}
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func verifyPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
