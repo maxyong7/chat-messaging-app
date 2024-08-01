@@ -7,7 +7,6 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// UserProfileUseCase -.
 type UserProfileUseCase struct {
 	repo UserRepo
 }
