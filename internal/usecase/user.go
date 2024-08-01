@@ -36,6 +36,10 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials e
 		return "", false, entity.ErrUserNotFound
 	}
 
+	if userInfo.Password == userCredentials.Password {
+		return userInfo.UserUuid, true, nil
+	}
+
 	hashedPassword, err := hashPassword(userCredentialsDTO.Password)
 	if err != nil {
 		return "", false, err

@@ -17,7 +17,15 @@ type GetMessageDTO struct {
 }
 
 type SeenStatus struct {
-	UserInfo
+	UserUUID         string
+	ConversationUUID string
+}
+type SeenStatusDTO struct {
+	UserUUID         string
+	ConversationUUID string
+}
+type GetSeenStatusDTO struct {
+	UserInfoDTO
 	SeenTimestamp string `json:"seen_timestamp"`
 }
 

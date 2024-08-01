@@ -127,3 +127,87 @@ func (r *MessageRepo) DeleteMessage(ctx context.Context, msg entity.MessageDTO) 
 
 	return nil
 }
+
+func (r *MessageRepo) UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatusDTO) error {
+	// Begin a transaction
+	tx, err := r.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("MessageRepo - UpdateSeenStatus - failed to begin transaction: %w", err)
+	}
+
+	// Ensure transaction is rolled back if it doesn't commit
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; rollback
+		}
+	}()
+
+	insertSeenStatusSQL := `
+		INSERT INTO seen_status (message_uuid, user_uuid, seen_timestamp)
+		SELECT m.message_uuid, $1, NOW()
+		FROM messages m
+		LEFT JOIN seen_status s
+		ON m.message_uuid = s.message_uuid
+		WHERE m.conversation_uuid = $2
+		AND m.user_uuid <> $1
+		AND s.message_uuid IS NULL;
+		`
+	_, err = tx.ExecContext(ctx, insertSeenStatusSQL, seenStatus.UserUUID, seenStatus.ConversationUUID)
+	if err != nil {
+		return fmt.Errorf("failed to execute insert deleteMessageSQL query: %w", err)
+	}
+
+	// Commit the transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("MessageRepo - UpdateSeenStatus - failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *MessageRepo) GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error) {
+	getSeenStatusSQL := `
+		SELECT
+			s.seen_timestamp
+			ui.first_name,
+			ui.last_name,
+			ui.avatar
+		FROM seen_status s
+		LEFT JOIN user_info ui ON s.user_uuid = ui.user_uuid
+		WHERE s.message_uuid = $1
+		ORDER BY s.seen_timestamp DESC
+	`
+
+	// Execute the final query.
+	rows, err := r.QueryContext(ctx, getSeenStatusSQL, messageUUID)
+	if err != nil {
+		fmt.Println("GetSeenStatus - getSeenStatusSQL err: ", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Process the results.
+	var seenStatuses []entity.GetSeenStatusDTO
+	for rows.Next() {
+		var seenStatus entity.GetSeenStatusDTO
+		if err := rows.Scan(
+			&seenStatus.SeenTimestamp,
+			&seenStatus.FirstName,
+			&seenStatus.LastName,
+			&seenStatus.Avatar,
+		); err != nil {
+			fmt.Println("GetSeenStatus - rows.Scan err: ", err)
+			return nil, err
+		}
+		seenStatuses = append(seenStatuses, seenStatus)
+	}
+	if err := rows.Err(); err != nil {
+		fmt.Println("GetSeenStatus - rows.Err(): ", err)
+	}
+
+	return seenStatuses, nil
+}

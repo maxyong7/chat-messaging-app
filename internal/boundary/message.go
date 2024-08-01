@@ -34,3 +34,7 @@ type GetMessageResponseModel struct {
 type GetMessageResponseData struct {
 	Messages []entity.GetMessageDTO `json:"messages"`
 }
+
+type GetSeenStatusResponseModel struct {
+	SeenStatus []entity.GetSeenStatusDTO `json:"seen_status"`
+}

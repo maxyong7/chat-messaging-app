@@ -57,12 +57,16 @@ type (
 		GetMessages(ctx context.Context, reqParam entity.RequestParamsDTO, conversationUUID string) ([]entity.GetMessageDTO, error)
 		ValidateMessageSentByUser(ctx context.Context, msg entity.MessageDTO) (bool, error)
 		DeleteMessage(ctx context.Context, msg entity.MessageDTO) error
+		UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatusDTO) error
+		GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error)
 	}
 
 	Message interface {
 		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
 		DeleteMessage(ctx context.Context, msg entity.Message) error
 		ValidateMessageSentByUser(ctx context.Context, msg entity.Message) (bool, error)
+		UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatus) error
+		GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error)
 	}
 
 	ReactionRepo interface {

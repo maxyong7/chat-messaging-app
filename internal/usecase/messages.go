@@ -42,6 +42,25 @@ func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqPa
 	return messages, nil
 }
 
+func (uc *MessageUseCase) UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatus) error {
+	seenStatusDTO := entity.SeenStatusDTO{
+		UserUUID:         seenStatus.UserUUID,
+		ConversationUUID: seenStatus.ConversationUUID,
+	}
+	err := uc.msgRepo.UpdateSeenStatus(ctx, seenStatusDTO)
+	if err != nil {
+		return fmt.Errorf("MessageUseCase - UpdateSeenStatus - uc.msgRepo.UpdateSeenStatus: %w", err)
+	}
+	return nil
+}
+func (uc *MessageUseCase) GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error) {
+	seenStatus, err := uc.msgRepo.GetSeenStatus(ctx, messageUUID)
+	if err != nil {
+		return nil, fmt.Errorf("MessageUseCase - GetSeenStatus - uc.msgRepo.GetSeenStatus: %w", err)
+	}
+	return seenStatus, nil
+}
+
 func (uc *MessageUseCase) DeleteMessage(ctx context.Context, msg entity.Message) error {
 	msgDTO := entity.MessageDTO{
 		UserUUID:    msg.SenderUUID,
