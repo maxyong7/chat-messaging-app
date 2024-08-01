@@ -172,7 +172,7 @@ func (r *MessageRepo) UpdateSeenStatus(ctx context.Context, seenStatus entity.Se
 func (r *MessageRepo) GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error) {
 	getSeenStatusSQL := `
 		SELECT
-			s.seen_timestamp
+			s.seen_timestamp,
 			ui.first_name,
 			ui.last_name,
 			ui.avatar
