@@ -95,10 +95,10 @@ func authMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-func createToken(userUuid string) (string, error) {
+func createToken(userUuid string, expirationHour time.Duration) (string, error) {
 	claims := jwt.MapClaims{}
 	claims["user_uuid"] = userUuid
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * expirationHour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte("secret"))
 }
