@@ -58,7 +58,7 @@ func (r *ReactionRepo) StoreReaction(ctx context.Context, srDTO entity.StoreReac
 	return nil
 }
 
-func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReaction, error) {
+func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReactionDTO, error) {
 	getReactionSQL := `
 		SELECT
 			r.reaction_type,
@@ -79,9 +79,9 @@ func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]
 	defer rows.Close()
 
 	// Process the results.
-	var reactions []entity.GetReaction
+	var reactions []entity.GetReactionDTO
 	for rows.Next() {
-		var reaction entity.GetReaction
+		var reaction entity.GetReactionDTO
 		if err := rows.Scan(
 			&reaction.ReactionType,
 			&reaction.FirstName,

@@ -67,7 +67,7 @@ type (
 
 	ReactionRepo interface {
 		StoreReaction(ctx context.Context, srDTO entity.StoreReactionDTO) error
-		GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReaction, error)
+		GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReactionDTO, error)
 		RemoveReaction(ctx context.Context, rr entity.RemoveReactionDTO) error
 	}
 

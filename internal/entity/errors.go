@@ -13,6 +13,4 @@ var (
 	ErrParticipantAlrdInGroupChat = errors.New("one or more participant(s) is already in groupchat")
 	ErrParticipantNotInGroupChat  = errors.New("one or more participant(s) is not in groupchat")
 	ErrIncorrectPassword          = errors.New("incorrect password")
-
-	// Add other custom errors here
 )
