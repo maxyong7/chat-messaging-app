@@ -1,10 +1,10 @@
 package entity
 
 type UserInfoDTO struct {
-	UserUUID  string
-	FirstName string
-	LastName  string
-	Avatar    string
+	UserUUID  string `json:"user_uuid"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Avatar    string `json:"avatar"`
 }
 
 type UserInfo struct {

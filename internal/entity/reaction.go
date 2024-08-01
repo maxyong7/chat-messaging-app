@@ -1,14 +1,13 @@
 package entity
 
-type GetReaction struct {
-	UserInfo
-	ReactionType string `json:"reaction_type"`
-}
-
 type Reaction struct {
 	MessageUUID  string
 	SenderUUID   string
 	ReactionType string
+}
+type GetReactionDTO struct {
+	UserInfoDTO
+	ReactionType string `json:"reaction_type"`
 }
 
 type StoreReactionDTO struct {
