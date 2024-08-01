@@ -49,8 +49,8 @@ type (
 		GetContactsByUserUUID(ctx context.Context, userUuid string) ([]entity.Contacts, error)
 		CheckContactExist(ctx context.Context, userUuid string, contactUserUuid string) (bool, error)
 		StoreContacts(context.Context, entity.ContactsDTO) error
-		UpdateRemoved(context.Context, entity.ContactsDTO) error
-		UpdateBlocked(context.Context, entity.ContactsDTO) error
+		UpdateRemovedStatus(context.Context, entity.ContactsDTO) error
+		UpdateBlockedStatus(context.Context, entity.ContactsDTO) error
 	}
 
 	MessageRepo interface {

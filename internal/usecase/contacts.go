@@ -48,7 +48,7 @@ func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName strin
 	}
 
 	if exist {
-		err := uc.repo.UpdateRemoved(ctx, entity.ContactsDTO{
+		err := uc.repo.UpdateRemovedStatus(ctx, entity.ContactsDTO{
 			UserUUID:        userUuid,
 			ContactUserUUID: *contactUserUUID,
 			Removed:         false,
@@ -60,7 +60,6 @@ func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName strin
 		return nil
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:         userUuid,
 		ContactUserUUID:  *contactUserUUID,
@@ -94,14 +93,13 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 		return entity.ErrContactDoesNotExists
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:        userUuid,
 		ContactUserUUID: *contactUserUUID,
 		Removed:         true,
 	}
 
-	err = uc.repo.UpdateRemoved(ctx, contactsDTO)
+	err = uc.repo.UpdateRemovedStatus(ctx, contactsDTO)
 	if err != nil {
 		return fmt.Errorf("ContactsUseCase - RemoveContact - uc.repo.UpdateRemoved: %w", err)
 	}
@@ -136,9 +134,9 @@ func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserNa
 		Blocked:         block,
 	}
 
-	err = uc.repo.UpdateBlocked(ctx, contactsDTO)
+	err = uc.repo.UpdateBlockedStatus(ctx, contactsDTO)
 	if err != nil {
-		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - uc.repo.UpdateBlocked: %w", err)
+		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - uc.repo.UpdateBlockedStatus: %w", err)
 	}
 	return nil
 }
