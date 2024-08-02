@@ -7,12 +7,10 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// ReactionUseCase -.
 type ReactionUseCase struct {
 	reactionRepo ReactionRepo
 }
 
-// New -.
 func NewReaction(r ReactionRepo) *ReactionUseCase {
 	return &ReactionUseCase{
 		reactionRepo: r,

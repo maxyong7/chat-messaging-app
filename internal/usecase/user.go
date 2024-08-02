@@ -8,19 +8,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// LoginUseCase -.
 type LoginUseCase struct {
 	repo UserRepo
 }
 
-// New -.
 func NewAuth(r UserRepo) *LoginUseCase {
 	return &LoginUseCase{
 		repo: r,
 	}
 }
 
-// VerifyCredentials -.
 func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials entity.UserCredentials) (string, bool, error) {
 	userCredentialsDTO := entity.UserCredentialsDTO{
 		Username: userCredentials.Username,
@@ -51,7 +48,6 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials e
 	return "", false, entity.ErrIncorrectPassword
 }
 
-// RegisterUser -.
 func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
 	hashedPassword, err := hashPassword(userRegistration.Password)
 	if err != nil {

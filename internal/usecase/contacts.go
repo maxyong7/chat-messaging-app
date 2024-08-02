@@ -8,13 +8,11 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// ContactsUseCase -.
 type ContactsUseCase struct {
 	repo         ContactsRepo
 	userInfoRepo UserRepo
 }
 
-// New -.
 func NewContacts(r ContactsRepo, userInfoRepo UserRepo) *ContactsUseCase {
 	return &ContactsUseCase{
 		repo:         r,
@@ -41,7 +39,6 @@ func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName strin
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
@@ -83,7 +80,6 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
@@ -117,7 +113,6 @@ func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserNa
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
@@ -127,7 +122,6 @@ func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserNa
 		return entity.ErrContactDoesNotExists
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:        userUuid,
 		ContactUserUUID: *contactUserUUID,

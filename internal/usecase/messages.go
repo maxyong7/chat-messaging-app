@@ -10,13 +10,11 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// MessageUseCase -.
 type MessageUseCase struct {
 	msgRepo      MessageRepo
 	reactionRepo ReactionRepo
 }
 
-// New -.
 func NewMessage(m MessageRepo, r ReactionRepo) *MessageUseCase {
 	return &MessageUseCase{
 		msgRepo:      m,

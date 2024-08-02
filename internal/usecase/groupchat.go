@@ -7,13 +7,11 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// GroupChatUseCase -.
 type GroupChatUseCase struct {
 	repo         GroupChatRepo
 	userInfoRepo UserRepo
 }
 
-// New -.
 func NewGroupChat(r GroupChatRepo, userInfoRepo UserRepo) *GroupChatUseCase {
 	return &GroupChatUseCase{
 		repo:         r,
@@ -50,20 +48,6 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChat entity
 			return entity.ErrParticipantAlrdInGroupChat
 		}
 	}
-
-	// // Check username exists [Needed if front end can only pass username, not participant's uuid]
-	// for i, participant := range groupChat.Participants {
-	// 	participantUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, participant.Username)
-	// 	if err != nil {
-	// 		return fmt.Errorf("GroupChatUseCase - AddParticipants - GetUserUUIDByUsername: %w", err)
-	// 	}
-
-	// 	if participantUUID == nil {
-	// 		return entity.ErrUserNameNotFound
-	// 	}
-
-	// 	groupChat.Participants[i].ParticipantUUID = *participantUUID
-	// }
 
 	err = uc.repo.AddParticipants(ctx, groupChatDTO)
 	if err != nil {
@@ -103,7 +87,7 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChat ent
 
 func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChat) error {
 	groupChatDTO := toGroupChatDTO(groupChat)
-	// Check if user is in groupchat before allowing to remove participant
+	// Check if user is in groupchat before allowing to update group title
 	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.ValidateUserInGroupChat: %w", err)
