@@ -1,24 +1,24 @@
 package entity
 
-type UserInfoDTO struct {
+type UserProfileDTO struct {
 	UserUUID  string `json:"user_uuid,omitempty"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Avatar    string `json:"avatar"`
 }
 
-type UserInfo struct {
+type UserProfile struct {
 	UserUUID  string
 	FirstName string
 	LastName  string
 	Avatar    string
 }
 
-func (dto *UserInfoDTO) ToUserInfo() UserInfo {
+func (dto *UserProfileDTO) ToUserInfo() UserProfile {
 	if dto == nil {
-		return UserInfo{}
+		return UserProfile{}
 	}
-	return UserInfo{
+	return UserProfile{
 		UserUUID:  dto.UserUUID,
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,

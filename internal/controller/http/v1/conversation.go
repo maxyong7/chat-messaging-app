@@ -70,7 +70,7 @@ func (r *conversationRoutes) getConversations(c *gin.Context) {
 		UserID: userId,
 	}
 
-	conversations, err := r.conv.GetConversations(c.Request.Context(), requestParams)
+	conversations, err := r.conv.GetConversationList(c.Request.Context(), requestParams)
 	if err != nil {
 		r.l.Error(err, "http - v1 - getConversations - getConversations")
 		handleCustomErrors(c, err)
@@ -97,7 +97,7 @@ func (r *conversationRoutes) getConversations(c *gin.Context) {
 
 type Client struct {
 	ID       string
-	UserInfo entity.UserInfo
+	UserInfo entity.UserProfile
 	Conn     *websocket.Conn
 	send     chan boundary.ConversationResponseModel
 	hub      *Hub
@@ -118,7 +118,7 @@ func (r *conversationRoutes) serveWsController(hub *Hub) gin.HandlerFunc {
 			return
 		}
 
-		userInfo, err := r.up.GetUserInfo(c.Request.Context(), userUUID)
+		userInfo, err := r.up.GetUserProfile(c.Request.Context(), userUUID)
 		if err != nil || userInfo.UserUUID == "" {
 			log.Println("ServeWs - GetUserInfo err:", err)
 			return
@@ -304,7 +304,7 @@ func (c *Client) writePump() {
 }
 
 // NewClient creates a new client
-func NewClient(id string, userInfo entity.UserInfo, conn *websocket.Conn, hub *Hub, route *conversationRoutes) *Client {
+func NewClient(id string, userInfo entity.UserProfile, conn *websocket.Conn, hub *Hub, route *conversationRoutes) *Client {
 	return &Client{
 		ID:       id,
 		UserInfo: userInfo,
@@ -321,7 +321,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, userInfo entity.UserInfo) {
+func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, userInfo entity.UserProfile) {
 	senderUUID := userInfo.UserUUID
 	conversationUUID := c.ID
 	ctx := context.Background()
@@ -432,7 +432,7 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 	}
 }
 
-func buildSendMessageResponse(conv entity.Conversation, userInfo entity.UserInfo) boundary.ConversationResponseModel {
+func buildSendMessageResponse(conv entity.Conversation, userInfo entity.UserProfile) boundary.ConversationResponseModel {
 	return boundary.ConversationResponseModel{
 		MessageType: sendMessageType,
 		Data: boundary.ConversationResponseData{

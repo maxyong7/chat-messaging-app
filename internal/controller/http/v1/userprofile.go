@@ -33,7 +33,7 @@ func (r *userProfileRoute) getUserProfile(c *gin.Context) {
 		return
 	}
 
-	userProfile, err := r.t.GetUserInfo(c.Request.Context(), userId)
+	userProfile, err := r.t.GetUserProfile(c.Request.Context(), userId)
 	if err != nil {
 		r.l.Error(err, "http - v1 - getUserProfile - GetUserInfo")
 		handleCustomErrors(c, err)

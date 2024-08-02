@@ -12,7 +12,7 @@ type GetMessageDTO struct {
 	MessageUUID string           `json:"message_uuid"`
 	Content     string           `json:"content"`
 	CreatedAt   time.Time        `json:"created_at"`
-	User        UserInfoDTO      `json:"user"`
+	User        UserProfileDTO   `json:"user"`
 	Reaction    []GetReactionDTO `json:"reaction"`
 }
 
@@ -25,7 +25,7 @@ type SeenStatusDTO struct {
 	ConversationUUID string
 }
 type GetSeenStatusDTO struct {
-	UserInfoDTO
+	UserProfileDTO
 	SeenTimestamp string `json:"seen_timestamp"`
 }
 
@@ -35,9 +35,9 @@ type MessageDTO struct {
 }
 
 type SearchMessageDTO struct {
-	MessageUUID string      `json:"message_uuid"`
-	Content     string      `json:"content"`
-	CreatedAt   time.Time   `json:"created_at"`
-	User        UserInfoDTO `json:"user"`
-	Cursor      string      `json:"cursor"`
+	MessageUUID string         `json:"message_uuid"`
+	Content     string         `json:"content"`
+	CreatedAt   time.Time      `json:"created_at"`
+	User        UserProfileDTO `json:"user"`
+	Cursor      string         `json:"cursor"`
 }

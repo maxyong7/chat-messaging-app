@@ -18,8 +18,8 @@ func NewUserProfile(r UserRepo) *UserProfileUseCase {
 	}
 }
 
-func (uc *UserProfileUseCase) GetUserInfo(ctx context.Context, userUUID string) (entity.UserInfo, error) {
-	userInfoDTO, err := uc.repo.GetUserInfo(ctx, userUUID)
+func (uc *UserProfileUseCase) GetUserProfile(ctx context.Context, userUUID string) (entity.UserProfile, error) {
+	userInfoDTO, err := uc.repo.GetUserProfile(ctx, userUUID)
 	if err != nil {
 		return userInfoDTO.ToUserInfo(), fmt.Errorf("UserProfileUseCase - GetUserInfo - GetUserInfo: %w", err)
 	}
@@ -29,9 +29,9 @@ func (uc *UserProfileUseCase) GetUserInfo(ctx context.Context, userUUID string) 
 	return userInfoDTO.ToUserInfo(), nil
 }
 
-func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userInfo entity.UserInfo) error {
-	userInfoDTO := entity.UserInfoDTO(userInfo)
-	err := uc.repo.UpdateUserInfo(ctx, userInfoDTO)
+func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userInfo entity.UserProfile) error {
+	userInfoDTO := entity.UserProfileDTO(userInfo)
+	err := uc.repo.UpdateUserProfile(ctx, userInfoDTO)
 	if err != nil {
 		return fmt.Errorf("UserProfileUseCase - UpdateUserProfile - UpdateUserProfile: %w", err)
 	}

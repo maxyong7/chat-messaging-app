@@ -23,7 +23,7 @@ type GetConversationsResponseModel struct {
 }
 
 type GetConversationsData struct {
-	Conversations []entity.Conversations `json:"conversations"`
+	Conversations []entity.ConversationList `json:"conversations"`
 }
 
 type ConversationResponseModel struct {

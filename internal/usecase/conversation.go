@@ -15,18 +15,17 @@ type ReactionData struct {
 	ReactionType string `json:"reaction_type"`
 }
 
-// New -.
 func NewConversation(r ConversationRepo) *ConversationUseCase {
 	return &ConversationUseCase{
 		repo: r,
 	}
 }
 
-func (uc *ConversationUseCase) GetConversations(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
+func (uc *ConversationUseCase) GetConversationList(ctx context.Context, reqParam entity.RequestParams) ([]entity.ConversationList, error) {
 	reqParamDTO := entity.RequestParamsDTO(reqParam)
-	conversations, err := uc.repo.GetConversations(ctx, reqParamDTO)
+	conversations, err := uc.repo.GetConversationList(ctx, reqParamDTO)
 	if err != nil {
-		return nil, fmt.Errorf("ConversationUseCase - GetConversation - s.repo.GetConversations: %w", err)
+		return nil, fmt.Errorf("ConversationUseCase - GetConversation - s.repo.GetConversationList: %w", err)
 	}
 	if len(conversations) == 0 {
 		return nil, nil

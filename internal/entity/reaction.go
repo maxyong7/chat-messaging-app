@@ -6,7 +6,7 @@ type Reaction struct {
 	ReactionType string
 }
 type GetReactionDTO struct {
-	UserInfoDTO
+	UserProfileDTO
 	ReactionType string `json:"reaction_type"`
 }
 

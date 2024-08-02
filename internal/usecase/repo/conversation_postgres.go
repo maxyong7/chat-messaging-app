@@ -20,7 +20,7 @@ func NewConversation(pg *sql.DB) *ConversationRepo {
 	return &ConversationRepo{pg}
 }
 
-func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity.RequestParamsDTO) ([]entity.Conversations, error) {
+func (r *ConversationRepo) GetConversationList(ctx context.Context, reqParam entity.RequestParamsDTO) ([]entity.ConversationList, error) {
 	// Define the SQL query.
 	query := `
 		WITH combined_conversations AS (
@@ -79,15 +79,15 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	// Execute the final query.
 	rows, err = r.QueryContext(ctx, finalQuery, pq.Array(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
 	if err != nil {
-		fmt.Println("GetConversations - finalQuery err: ", err)
+		fmt.Println("GetConversationList - finalQuery err: ", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	// Process the results.
-	var conversations []entity.Conversations
+	var conversations []entity.ConversationList
 	for rows.Next() {
-		var conv entity.Conversations
+		var conv entity.ConversationList
 		if err := rows.Scan(
 			&conv.LastMessage,
 			&conv.Title,
@@ -97,13 +97,13 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 			&conv.LastSentUser.LastName,
 			&conv.LastSentUser.Avatar,
 		); err != nil {
-			fmt.Println("GetConversations - rows.Scan err: ", err)
+			fmt.Println("GetConversationList - rows.Scan err: ", err)
 			return nil, err
 		}
 		conversations = append(conversations, conv)
 	}
 	if err := rows.Err(); err != nil {
-		fmt.Println("GetConversations - rows.Err(): ", err)
+		fmt.Println("GetConversationList - rows.Err(): ", err)
 	}
 
 	return conversations, nil

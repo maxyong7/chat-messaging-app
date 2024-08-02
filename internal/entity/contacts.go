@@ -1,7 +1,7 @@
 package entity
 
 type Contacts struct {
-	UserInfo
+	UserProfile
 	ConversationUUID string `json:"conversation_uuid"`
 	Blocked          bool   `json:"blocked"`
 }

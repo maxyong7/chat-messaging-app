@@ -21,20 +21,18 @@ type (
 		GetUserCredentials(context.Context, entity.UserCredentialsDTO) (*entity.UserCredentialsDTO, error)
 		StoreUserInfo(context.Context, entity.UserRegistrationDTO) error
 		CheckUserExist(context.Context, entity.UserRegistrationDTO) (bool, error)
-		GetUserInfo(context.Context, string) (*entity.UserInfoDTO, error)
+		GetUserProfile(context.Context, string) (*entity.UserProfileDTO, error)
 		GetUserUUIDByUsername(context.Context, string) (*string, error)
-		UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error
+		UpdateUserProfile(ctx context.Context, userInfo entity.UserProfileDTO) error
 	}
 
 	Conversation interface {
-		// ServeWs(*gin.Context, *Hub, string)
-		// ServeWsWithRW(http.ResponseWriter, *http.Request, *Hub)
-		GetConversations(context.Context, entity.RequestParams) ([]entity.Conversations, error)
+		GetConversationList(context.Context, entity.RequestParams) ([]entity.ConversationList, error)
 		StoreConversationAndMessage(ctx context.Context, conv entity.Conversation) error
 	}
 
 	ConversationRepo interface {
-		GetConversations(context.Context, entity.RequestParamsDTO) ([]entity.Conversations, error)
+		GetConversationList(context.Context, entity.RequestParamsDTO) ([]entity.ConversationList, error)
 		InsertConversationAndMessage(ctx context.Context, convDTO entity.ConversationDTO) error
 	}
 
@@ -98,7 +96,7 @@ type (
 	}
 
 	UserProfile interface {
-		GetUserInfo(ctx context.Context, userUUID string) (entity.UserInfo, error)
-		UpdateUserProfile(ctx context.Context, userInfo entity.UserInfo) error
+		GetUserProfile(ctx context.Context, userUUID string) (entity.UserProfile, error)
+		UpdateUserProfile(ctx context.Context, userInfo entity.UserProfile) error
 	}
 )
