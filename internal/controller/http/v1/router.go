@@ -16,14 +16,13 @@ import (
 )
 
 type RouterUseCases struct {
-	Translation  usecase.Translation
 	Verification usecase.Verification
 	Conversation usecase.Conversation
-	Inbox        usecase.Inbox
 	Contact      usecase.Contact
 	Message      usecase.Message
 	GroupChat    usecase.GroupChat
 	UserProfile  usecase.UserProfile
+	Reaction     usecase.Reaction
 }
 
 // NewRouter -.
@@ -59,9 +58,7 @@ func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 	protectedHandler := handler.Group("/v1")
 	protectedHandler.Use(authMiddleware)
 	{
-		newTranslationRoutes(protectedHandler, uc.Translation, l)
-		newConversationRoute(protectedHandler, uc.Conversation, l)
-		newInboxRoute(protectedHandler, uc.Inbox, l)
+		newConversationRoute(protectedHandler, uc.Conversation, uc.UserProfile, uc.Message, uc.Reaction, l)
 		newContactRoute(protectedHandler, uc.Contact, l)
 		newMessageRoute(protectedHandler, uc.Message, l)
 		newGroupChatRoute(protectedHandler, uc.GroupChat, l)

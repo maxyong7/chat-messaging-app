@@ -8,13 +8,11 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// ContactsUseCase -.
 type ContactsUseCase struct {
 	repo         ContactsRepo
 	userInfoRepo UserRepo
 }
 
-// New -.
 func NewContacts(r ContactsRepo, userInfoRepo UserRepo) *ContactsUseCase {
 	return &ContactsUseCase{
 		repo:         r,
@@ -41,14 +39,13 @@ func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName strin
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
 	}
 
 	if exist {
-		err := uc.repo.UpdateRemoved(ctx, entity.ContactsDTO{
+		err := uc.repo.UpdateRemovedStatus(ctx, entity.ContactsDTO{
 			UserUUID:        userUuid,
 			ContactUserUUID: *contactUserUUID,
 			Removed:         false,
@@ -60,7 +57,6 @@ func (uc *ContactsUseCase) AddContact(ctx context.Context, contactUserName strin
 		return nil
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:         userUuid,
 		ContactUserUUID:  *contactUserUUID,
@@ -84,7 +80,6 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
@@ -94,14 +89,13 @@ func (uc *ContactsUseCase) RemoveContact(ctx context.Context, contactUserName st
 		return entity.ErrContactDoesNotExists
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:        userUuid,
 		ContactUserUUID: *contactUserUUID,
 		Removed:         true,
 	}
 
-	err = uc.repo.UpdateRemoved(ctx, contactsDTO)
+	err = uc.repo.UpdateRemovedStatus(ctx, contactsDTO)
 	if err != nil {
 		return fmt.Errorf("ContactsUseCase - RemoveContact - uc.repo.UpdateRemoved: %w", err)
 	}
@@ -119,7 +113,6 @@ func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserNa
 		return entity.ErrUserNameNotFound
 	}
 
-	// Check if already in contacts
 	exist, err := uc.repo.CheckContactExist(ctx, userUuid, *contactUserUUID)
 	if err != nil {
 		return err
@@ -129,16 +122,15 @@ func (uc *ContactsUseCase) UpdateBlockContact(ctx context.Context, contactUserNa
 		return entity.ErrContactDoesNotExists
 	}
 
-	//Store contacts
 	contactsDTO := entity.ContactsDTO{
 		UserUUID:        userUuid,
 		ContactUserUUID: *contactUserUUID,
 		Blocked:         block,
 	}
 
-	err = uc.repo.UpdateBlocked(ctx, contactsDTO)
+	err = uc.repo.UpdateBlockedStatus(ctx, contactsDTO)
 	if err != nil {
-		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - uc.repo.UpdateBlocked: %w", err)
+		return fmt.Errorf("ContactsUseCase - UpdateBlockContact - uc.repo.UpdateBlockedStatus: %w", err)
 	}
 	return nil
 }

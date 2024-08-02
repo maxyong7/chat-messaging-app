@@ -129,12 +129,12 @@ func (r *ContactsRepo) StoreContacts(ctx context.Context, contacts entity.Contac
 	return nil
 }
 
-// UpdateBlocked -.
-func (r *ContactsRepo) UpdateBlocked(ctx context.Context, contacts entity.ContactsDTO) error {
+// UpdateBlockedStatus -.
+func (r *ContactsRepo) UpdateBlockedStatus(ctx context.Context, contacts entity.ContactsDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - UpdateBlocked - failed to begin transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateBlockedStatus - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -161,18 +161,18 @@ func (r *ContactsRepo) UpdateBlocked(ctx context.Context, contacts entity.Contac
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - UpdateBlocked - failed to commit transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateBlockedStatus - failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
-// UpdateRemoved -.
-func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.ContactsDTO) error {
+// UpdateRemovedStatus -.
+func (r *ContactsRepo) UpdateRemovedStatus(ctx context.Context, contacts entity.ContactsDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - UpdateRemoved - failed to begin transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateRemovedStatus - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -199,7 +199,7 @@ func (r *ContactsRepo) UpdateRemoved(ctx context.Context, contacts entity.Contac
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ContactsRepo - UpdateRemoved - failed to commit transaction: %w", err)
+		return fmt.Errorf("ContactsRepo - UpdateRemovedStatus - failed to commit transaction: %w", err)
 	}
 
 	return nil

@@ -21,7 +21,7 @@ func NewUserInfo(pg *sql.DB) *UserInfoRepo {
 }
 
 // GetUserCredentials -.
-func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.UserCredentials) (*entity.UserCredentialsDTO, error) {
+func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.UserCredentialsDTO) (*entity.UserCredentialsDTO, error) {
 	getUserCredentialsSQL := `
 		SELECT email, username, password, user_uuid
 		FROM user_credentials
@@ -42,7 +42,7 @@ func (r *UserInfoRepo) GetUserCredentials(ctx context.Context, userInfo entity.U
 }
 
 // StoreUserInfo -.
-func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistration) error {
+func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserRegistrationDTO) error {
 	userUuid := uuid.New()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
@@ -88,7 +88,7 @@ func (r *UserInfoRepo) StoreUserInfo(ctx context.Context, userRegis entity.UserR
 }
 
 // CheckUserExist -.
-func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistration) (bool, error) {
+func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.UserRegistrationDTO) (bool, error) {
 	// Check if the user already exists
 	checkUserExistSQL := `
 	SELECT 1 
@@ -109,22 +109,22 @@ func (r *UserInfoRepo) CheckUserExist(ctx context.Context, userRegis entity.User
 	return false, nil
 }
 
-// GetUserInfo -.
-func (r *UserInfoRepo) GetUserInfo(ctx context.Context, userUuid string) (*entity.UserInfoDTO, error) {
-	getUserInfoSQL := `
+// GetUserProfile -.
+func (r *UserInfoRepo) GetUserProfile(ctx context.Context, userUuid string) (*entity.UserProfileDTO, error) {
+	getUserProfileSQL := `
 		SELECT user_uuid, first_name, last_name, avatar
 		FROM user_info
 		WHERE (user_uuid = $1) 
 	`
 
-	var userInfoDTO entity.UserInfoDTO
-	err := r.QueryRowContext(ctx, getUserInfoSQL, userUuid).
+	var userInfoDTO entity.UserProfileDTO
+	err := r.QueryRowContext(ctx, getUserProfileSQL, userUuid).
 		Scan(&userInfoDTO.UserUUID, &userInfoDTO.FirstName, &userInfoDTO.LastName, &userInfoDTO.Avatar)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("UserInfoRepo - GetUserCredentials - r.QueryRowContext: %w", err)
+		return nil, fmt.Errorf("UserInfoRepo - GetUserProfile - r.QueryRowContext: %w", err)
 	}
 
 	return &userInfoDTO, nil
@@ -151,12 +151,12 @@ func (r *UserInfoRepo) GetUserUUIDByUsername(ctx context.Context, userName strin
 	return &userUUID, nil
 }
 
-// UpdateUserInfo -.
-func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserInfoDTO) error {
+// UpdateUserProfile -.
+func (r *UserInfoRepo) UpdateUserProfile(ctx context.Context, userInfo entity.UserProfileDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - UpdateUserInfo - failed to begin transaction: %w", err)
+		return fmt.Errorf("UserInfoRepo - UpdateUserProfile - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -171,8 +171,8 @@ func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserI
 
 	insertUserCredentialsSQL := `
 		UPDATE user_info 
-		SET first_name = $1
-		last_name = $2
+		SET first_name = $1,
+		last_name = $2,
 		avatar = $3
 		WHERE user_uuid = $4
 	`
@@ -184,7 +184,7 @@ func (r *UserInfoRepo) UpdateUserInfo(ctx context.Context, userInfo entity.UserI
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("UserInfoRepo - UpdateUserInfo - failed to commit transaction: %w", err)
+		return fmt.Errorf("UserInfoRepo - UpdateUserProfile - failed to commit transaction: %w", err)
 	}
 
 	return nil

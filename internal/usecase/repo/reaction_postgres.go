@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 )
 
 // ReactionRepo -.
@@ -21,8 +20,7 @@ func NewReaction(pg *sql.DB) *ReactionRepo {
 }
 
 // StoreReaction -.
-func (r *ReactionRepo) StoreReaction(msg usecase.MessageRequest) error {
-	ctx := context.Background()
+func (r *ReactionRepo) StoreReaction(ctx context.Context, srDTO entity.StoreReactionDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -46,7 +44,7 @@ func (r *ReactionRepo) StoreReaction(msg usecase.MessageRequest) error {
 		DO UPDATE SET
 			reaction_type = EXCLUDED.reaction_type
 		`
-	_, err = tx.ExecContext(ctx, upsertReactionSQL, msg.Data.MessageUUID, msg.Data.SenderUUID, msg.Data.ReactionType)
+	_, err = tx.ExecContext(ctx, upsertReactionSQL, srDTO.MessageUUID, srDTO.SenderUUID, srDTO.ReactionType)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertReactionSQL query: %w", err)
 	}
@@ -60,7 +58,7 @@ func (r *ReactionRepo) StoreReaction(msg usecase.MessageRequest) error {
 	return nil
 }
 
-func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]entity.Reaction, error) {
+func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]entity.GetReactionDTO, error) {
 	getReactionSQL := `
 		SELECT
 			r.reaction_type,
@@ -81,9 +79,9 @@ func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]
 	defer rows.Close()
 
 	// Process the results.
-	var reactions []entity.Reaction
+	var reactions []entity.GetReactionDTO
 	for rows.Next() {
-		var reaction entity.Reaction
+		var reaction entity.GetReactionDTO
 		if err := rows.Scan(
 			&reaction.ReactionType,
 			&reaction.FirstName,
@@ -102,8 +100,7 @@ func (r *ReactionRepo) GetReactions(ctx context.Context, messageUUID string) ([]
 	return reactions, nil
 }
 
-func (r *ReactionRepo) RemoveReaction(msg usecase.MessageRequest) error {
-	ctx := context.Background()
+func (r *ReactionRepo) RemoveReaction(ctx context.Context, rr entity.RemoveReactionDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -125,7 +122,7 @@ func (r *ReactionRepo) RemoveReaction(msg usecase.MessageRequest) error {
 		WHERE message_uuid = $1
 		AND user_uuid = $2
 		`
-	_, err = tx.ExecContext(ctx, deleteReactionSQL, msg.Data.MessageUUID, msg.Data.SenderUUID)
+	_, err = tx.ExecContext(ctx, deleteReactionSQL, rr.MessageUUID, rr.SenderUUID)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert deleteReactionSQL query: %w", err)
 	}

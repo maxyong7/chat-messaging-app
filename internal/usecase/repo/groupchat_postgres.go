@@ -20,7 +20,7 @@ func NewGroupChat(pg *sql.DB) *GroupChatRepo {
 }
 
 // CreateGroupChat -.
-func (r *GroupChatRepo) CreateGroupChat(ctx context.Context, groupChat entity.GroupChatRequest) error {
+func (r *GroupChatRepo) CreateGroupChat(ctx context.Context, groupChat entity.GroupChatDTO) error {
 	conversationUUID := uuid.New().String()
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
@@ -77,7 +77,7 @@ func (r *GroupChatRepo) CreateGroupChat(ctx context.Context, groupChat entity.Gr
 }
 
 // AddParticipants -.
-func (r *GroupChatRepo) AddParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error {
+func (r *GroupChatRepo) AddParticipants(ctx context.Context, groupChat entity.GroupChatDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -116,7 +116,7 @@ func (r *GroupChatRepo) AddParticipants(ctx context.Context, groupChat entity.Gr
 }
 
 // RemoveParticipant -.
-func (r *GroupChatRepo) RemoveParticipants(ctx context.Context, groupChat entity.GroupChatRequest) error {
+func (r *GroupChatRepo) RemoveParticipants(ctx context.Context, groupChat entity.GroupChatDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
@@ -156,7 +156,7 @@ func (r *GroupChatRepo) RemoveParticipants(ctx context.Context, groupChat entity
 }
 
 // UpdateGroupTitle -.
-func (r *GroupChatRepo) UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatRequest) error {
+func (r *GroupChatRepo) UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChatDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {

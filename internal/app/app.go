@@ -14,7 +14,6 @@ import (
 	v1 "github.com/maxyong7/chat-messaging-app/internal/controller/http/v1"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase/repo"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase/webapi"
 	"github.com/maxyong7/chat-messaging-app/pkg/httpserver"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
 	"github.com/maxyong7/chat-messaging-app/pkg/postgres"
@@ -49,15 +48,8 @@ func Run(cfg *config.Config) {
 	// )
 	verificationUseCase := usecase.NewAuth(
 		userInfoRepo,
-		webapi.New(),
 	)
 	conversationUseCase := usecase.NewConversation(
-		repo.NewConversation(pg),
-		userInfoRepo,
-		repo.NewReaction(pg),
-		repo.NewMessage(pg),
-	)
-	inboxUseCase := usecase.NewInbox(
 		repo.NewConversation(pg),
 	)
 	contactUseCase := usecase.NewContacts(
@@ -75,6 +67,9 @@ func Run(cfg *config.Config) {
 	userProfileUseCase := usecase.NewUserProfile(
 		repo.NewUserInfo(pg),
 	)
+	reactionUseCase := usecase.NewReaction(
+		repo.NewReaction(pg),
+	)
 
 	// // RabbitMQ RPC Server
 	// rmqRouter := amqprpc.NewRouter(translationUseCase)
@@ -89,11 +84,11 @@ func Run(cfg *config.Config) {
 	routerUseCase := v1.RouterUseCases{
 		Verification: verificationUseCase,
 		Conversation: conversationUseCase,
-		Inbox:        inboxUseCase,
 		Contact:      contactUseCase,
 		Message:      messageUseCase,
 		GroupChat:    groupChatUseCase,
 		UserProfile:  userProfileUseCase,
+		Reaction:     reactionUseCase,
 	}
 	v1.NewRouter(handler, l, routerUseCase)
 

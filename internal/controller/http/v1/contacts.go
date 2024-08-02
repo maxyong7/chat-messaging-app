@@ -28,7 +28,7 @@ func newContactRoute(handler *gin.RouterGroup, t usecase.Contact, l logger.Inter
 }
 
 func (r *contactRoute) getContacts(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -45,7 +45,7 @@ func (r *contactRoute) getContacts(c *gin.Context) {
 }
 
 func (r *contactRoute) addContact(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -68,7 +68,7 @@ func (r *contactRoute) addContact(c *gin.Context) {
 }
 
 func (r *contactRoute) removeContact(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
@@ -90,7 +90,7 @@ func (r *contactRoute) removeContact(c *gin.Context) {
 }
 
 func (r *contactRoute) updateBlockContact(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userId, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return

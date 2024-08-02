@@ -7,7 +7,6 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
-	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 )
 
 // ConversationRepo -.
@@ -21,7 +20,7 @@ func NewConversation(pg *sql.DB) *ConversationRepo {
 	return &ConversationRepo{pg}
 }
 
-func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity.RequestParams) ([]entity.Conversations, error) {
+func (r *ConversationRepo) GetConversationList(ctx context.Context, reqParam entity.RequestParamsDTO) ([]entity.ConversationList, error) {
 	// Define the SQL query.
 	query := `
 		WITH combined_conversations AS (
@@ -56,7 +55,6 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	// If there are no conversation UUIDs, return early.
 	if len(conversationUUIDs) == 0 {
 		fmt.Println("No conversations found.")
-		// return nil, entity.ErrNoConversationFound
 		return nil, nil
 	}
 
@@ -81,15 +79,15 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 	// Execute the final query.
 	rows, err = r.QueryContext(ctx, finalQuery, pq.Array(conversationUUIDs), reqParam.Cursor, reqParam.Limit)
 	if err != nil {
-		fmt.Println("GetConversations - finalQuery err: ", err)
+		fmt.Println("GetConversationList - finalQuery err: ", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	// Process the results.
-	var conversations []entity.Conversations
+	var conversations []entity.ConversationList
 	for rows.Next() {
-		var conv entity.Conversations
+		var conv entity.ConversationList
 		if err := rows.Scan(
 			&conv.LastMessage,
 			&conv.Title,
@@ -99,25 +97,24 @@ func (r *ConversationRepo) GetConversations(ctx context.Context, reqParam entity
 			&conv.LastSentUser.LastName,
 			&conv.LastSentUser.Avatar,
 		); err != nil {
-			fmt.Println("GetConversations - rows.Scan err: ", err)
+			fmt.Println("GetConversationList - rows.Scan err: ", err)
 			return nil, err
 		}
 		conversations = append(conversations, conv)
 	}
 	if err := rows.Err(); err != nil {
-		fmt.Println("GetConversations - rows.Err(): ", err)
+		fmt.Println("GetConversationList - rows.Err(): ", err)
 	}
 
 	return conversations, nil
 }
 
-// StoreConversation -.
-func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
-	ctx := context.Background()
+// InsertConversationAndMessage -.
+func (r *ConversationRepo) InsertConversationAndMessage(ctx context.Context, convDTO entity.ConversationDTO) error {
 	// Begin a transaction
 	tx, err := r.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("ConversationRepo - StoreConversation - failed to begin transaction: %w", err)
+		return fmt.Errorf("ConversationRepo - InsertConversationAndMessage - failed to begin transaction: %w", err)
 	}
 
 	// Ensure transaction is rolled back if it doesn't commit
@@ -134,7 +131,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
 		INSERT INTO messages (message_uuid, conversation_uuid, user_uuid, content, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		`
-	_, err = tx.ExecContext(ctx, insertMessagesSQL, msg.Data.MessageUUID, msg.Data.ConversationUUID, msg.Data.SenderUUID, msg.Data.Content, msg.Data.CreatedAt)
+	_, err = tx.ExecContext(ctx, insertMessagesSQL, convDTO.MessageUUID, convDTO.ConversationUUID, convDTO.SenderUUID, convDTO.Content, convDTO.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert insertMessagesSQL query: %w", err)
 	}
@@ -153,7 +150,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
 		title = EXCLUDED.title,
 		last_message_created_at = EXCLUDED.last_message_created_at
 	`
-	_, err = tx.ExecContext(ctx, upsertConversationsSQL, msg.Data.ConversationUUID, msg.Data.Content, msg.Data.SenderUUID, msg.Data.CreatedAt)
+	_, err = tx.ExecContext(ctx, upsertConversationsSQL, convDTO.ConversationUUID, convDTO.Content, convDTO.SenderUUID, convDTO.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to execute insert upsertConversationsSQL query: %w", err)
 	}
@@ -161,7 +158,7 @@ func (r *ConversationRepo) StoreConversation(msg usecase.MessageRequest) error {
 	// Commit the transaction
 	err = tx.Commit()
 	if err != nil {
-		return fmt.Errorf("ConversationRepo - StoreConversation - failed to commit transaction: %w", err)
+		return fmt.Errorf("ConversationRepo - InsertConversationAndMessage - failed to commit transaction: %w", err)
 	}
 
 	return nil

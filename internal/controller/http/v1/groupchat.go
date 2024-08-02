@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/maxyong7/chat-messaging-app/internal/entity"
+	"github.com/maxyong7/chat-messaging-app/internal/boundary"
 	"github.com/maxyong7/chat-messaging-app/internal/usecase"
 	"github.com/maxyong7/chat-messaging-app/pkg/logger"
 )
@@ -28,23 +28,20 @@ func newGroupChatRoute(handler *gin.RouterGroup, t usecase.GroupChat, l logger.I
 }
 
 func (r *groupChatRoute) createGroupChat(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userUUID, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	var request entity.GroupChatRequest
+	var request boundary.GroupChatRequestModel
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - createGroupChat")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
-
 		return
 	}
 
-	request.UserUUID = userId
-
-	err = r.t.CreateGroupChat(c.Request.Context(), request)
+	err = r.t.CreateGroupChat(c.Request.Context(), request.ToGroupChat(userUUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - createGroupChat - CreateGroupChat")
 		handleCustomErrors(c, err)
@@ -55,13 +52,13 @@ func (r *groupChatRoute) createGroupChat(c *gin.Context) {
 }
 
 func (r *groupChatRoute) addParticipant(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userUUID, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	var request entity.GroupChatRequest
+	var request boundary.GroupChatRequestModel
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - addParticipant")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
@@ -69,9 +66,7 @@ func (r *groupChatRoute) addParticipant(c *gin.Context) {
 		return
 	}
 
-	request.UserUUID = userId
-
-	err = r.t.AddParticipant(c.Request.Context(), request)
+	err = r.t.AddParticipant(c.Request.Context(), request.ToGroupChat(userUUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - addParticipant - AddParticipant")
 		handleCustomErrors(c, err)
@@ -82,13 +77,13 @@ func (r *groupChatRoute) addParticipant(c *gin.Context) {
 }
 
 func (r *groupChatRoute) removeParticipant(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userUUID, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	var request entity.GroupChatRequest
+	var request boundary.GroupChatRequestModel
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - removeParticipant")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
@@ -96,9 +91,7 @@ func (r *groupChatRoute) removeParticipant(c *gin.Context) {
 		return
 	}
 
-	request.UserUUID = userId
-
-	err = r.t.RemoveParticipant(c.Request.Context(), request)
+	err = r.t.RemoveParticipant(c.Request.Context(), request.ToGroupChat(userUUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - removeParticipant - RemoveParticipant")
 		handleCustomErrors(c, err)
@@ -109,13 +102,13 @@ func (r *groupChatRoute) removeParticipant(c *gin.Context) {
 }
 
 func (r *groupChatRoute) updateGroupTitle(c *gin.Context) {
-	userId, err := getUserIDFromContext(c)
+	userUUID, err := getUserUUIDFromContext(c)
 	if err != nil {
 		errorResponse(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	var request entity.GroupChatRequest
+	var request boundary.GroupChatRequestModel
 	if err := c.ShouldBindJSON(&request); err != nil {
 		r.l.Error(err, "http - v1 - updateGroupTitle")
 		errorResponse(c, http.StatusBadRequest, "invalid request body")
@@ -123,9 +116,7 @@ func (r *groupChatRoute) updateGroupTitle(c *gin.Context) {
 		return
 	}
 
-	request.UserUUID = userId
-
-	err = r.t.UpdateGroupTitle(c.Request.Context(), request)
+	err = r.t.UpdateGroupTitle(c.Request.Context(), request.ToGroupChat(userUUID))
 	if err != nil {
 		r.l.Error(err, "http - v1 - updateGroupTitle - UpdateGroupTitle")
 		handleCustomErrors(c, err)

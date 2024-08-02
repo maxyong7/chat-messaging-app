@@ -7,13 +7,11 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-// GroupChatUseCase -.
 type GroupChatUseCase struct {
 	repo         GroupChatRepo
 	userInfoRepo UserRepo
 }
 
-// New -.
 func NewGroupChat(r GroupChatRepo, userInfoRepo UserRepo) *GroupChatUseCase {
 	return &GroupChatUseCase{
 		repo:         r,
@@ -21,17 +19,18 @@ func NewGroupChat(r GroupChatRepo, userInfoRepo UserRepo) *GroupChatUseCase {
 	}
 }
 
-func (uc *GroupChatUseCase) CreateGroupChat(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
-	err := uc.repo.CreateGroupChat(ctx, groupChatReq)
+func (uc *GroupChatUseCase) CreateGroupChat(ctx context.Context, groupChat entity.GroupChat) error {
+	err := uc.repo.CreateGroupChat(ctx, toGroupChatDTO(groupChat))
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - CreateGroupChat - CreateGroupChat: %w", err)
 	}
 	return nil
 }
 
-func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
+func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChat entity.GroupChat) error {
 	// Check if user is in groupchat before allowing to add participant
-	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
+	groupChatDTO := toGroupChatDTO(groupChat)
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
@@ -39,9 +38,9 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq ent
 		return entity.ErrUserNotInGroupChat
 	}
 
-	for i := range groupChatReq.Participants {
+	for i := range groupChatDTO.Participants {
 		// Check if participant is in groupchat
-		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.Participants[i].ParticipantUUID)
+		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.Participants[i].ParticipantUUID)
 		if err != nil {
 			return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 		}
@@ -50,30 +49,17 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChatReq ent
 		}
 	}
 
-	// // Check username exists [Needed if front end can only pass username, not participant's uuid]
-	// for i, participant := range groupChatReq.Participants {
-	// 	participantUUID, err := uc.userInfoRepo.GetUserUUIDByUsername(ctx, participant.Username)
-	// 	if err != nil {
-	// 		return fmt.Errorf("GroupChatUseCase - AddParticipants - GetUserUUIDByUsername: %w", err)
-	// 	}
-
-	// 	if participantUUID == nil {
-	// 		return entity.ErrUserNameNotFound
-	// 	}
-
-	// 	groupChatReq.Participants[i].ParticipantUUID = *participantUUID
-	// }
-
-	err = uc.repo.AddParticipants(ctx, groupChatReq)
+	err = uc.repo.AddParticipants(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.AddParticipants: %w", err)
 	}
 	return nil
 }
 
-func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
+func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChat entity.GroupChat) error {
+	groupChatDTO := toGroupChatDTO(groupChat)
 	// Check if user is in groupchat before allowing to remove participant
-	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
@@ -81,9 +67,9 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChatReq 
 		return entity.ErrUserNotInGroupChat
 	}
 
-	for i := range groupChatReq.Participants {
+	for i := range groupChatDTO.Participants {
 		// Check if participant is in groupchat
-		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.Participants[i].ParticipantUUID)
+		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.Participants[i].ParticipantUUID)
 		if err != nil {
 			return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 		}
@@ -92,16 +78,17 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChatReq 
 		}
 	}
 
-	err = uc.repo.RemoveParticipants(ctx, groupChatReq)
+	err = uc.repo.RemoveParticipants(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.RemoveParticipants: %w", err)
 	}
 	return nil
 }
 
-func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChatReq entity.GroupChatRequest) error {
-	// Check if user is in groupchat before allowing to remove participant
-	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatReq.ConversationUUID, groupChatReq.UserUUID)
+func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChat) error {
+	groupChatDTO := toGroupChatDTO(groupChat)
+	// Check if user is in groupchat before allowing to update group title
+	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
@@ -109,9 +96,27 @@ func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChatReq e
 		return entity.ErrUserNotInGroupChat
 	}
 
-	err = uc.repo.UpdateGroupTitle(ctx, groupChatReq)
+	err = uc.repo.UpdateGroupTitle(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.UpdateGroupTitles: %w", err)
 	}
 	return nil
+}
+
+func toGroupChatDTO(gc entity.GroupChat) entity.GroupChatDTO {
+	participantsDTO := []entity.ParticipantDTO{}
+	for _, p := range gc.Participants {
+		participantDTO := entity.ParticipantDTO{
+			Username:        p.Username,
+			ParticipantUUID: p.ParticipantUUID,
+		}
+		participantsDTO = append(participantsDTO, participantDTO)
+
+	}
+	return entity.GroupChatDTO{
+		UserUUID:         gc.UserUUID,
+		Title:            gc.Title,
+		ConversationUUID: gc.ConversationUUID,
+		Participants:     participantsDTO,
+	}
 }

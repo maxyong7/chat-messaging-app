@@ -2,24 +2,42 @@ package entity
 
 import "time"
 
-type MessageResponse struct {
-	Data       MessageData `json:"data"`
-	Pagination Pagination  `json:"pagination"`
-}
-
-type MessageData struct {
-	Messages []Message `json:"messages"`
-}
-
 type Message struct {
-	MessageUUID string    `json:"message_uuid"`
-	Content     string    `json:"content"`
-	CreatedAt   time.Time `json:"created_at"`
-	User        UserInfo
-	Reaction    []Reaction
+	SenderUUID  string
+	MessageUUID string
+	Content     string
+	CreatedAt   time.Time
+}
+type GetMessageDTO struct {
+	MessageUUID string           `json:"message_uuid"`
+	Content     string           `json:"content"`
+	CreatedAt   time.Time        `json:"created_at"`
+	User        UserProfileDTO   `json:"user"`
+	Reaction    []GetReactionDTO `json:"reaction"`
 }
 
 type SeenStatus struct {
-	UserInfo
+	UserUUID         string
+	ConversationUUID string
+}
+type SeenStatusDTO struct {
+	UserUUID         string
+	ConversationUUID string
+}
+type GetSeenStatusDTO struct {
+	UserProfileDTO
 	SeenTimestamp string `json:"seen_timestamp"`
+}
+
+type MessageDTO struct {
+	UserUUID    string
+	MessageUUID string
+}
+
+type SearchMessageDTO struct {
+	MessageUUID string         `json:"message_uuid"`
+	Content     string         `json:"content"`
+	CreatedAt   time.Time      `json:"created_at"`
+	User        UserProfileDTO `json:"user"`
+	Cursor      string         `json:"cursor"`
 }

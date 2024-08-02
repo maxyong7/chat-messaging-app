@@ -13,10 +13,10 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func getUserIDFromContext(c *gin.Context) (string, error) {
-	userID, ok := c.Get("user_id")
+func getUserUUIDFromContext(c *gin.Context) (string, error) {
+	userID, ok := c.Get("user_uuid")
 
-	// userID, ok := ctx.Value("user_id").(string)
+	// userID, ok := ctx.Value("user_uuid").(string)
 	if !ok {
 		return "", fmt.Errorf("user ID not found in context")
 	}
@@ -85,20 +85,35 @@ func authMiddleware(c *gin.Context) {
 		return
 	}
 
-	userID, ok := claims["user_id"].(string)
+	userID, ok := claims["user_uuid"].(string)
 	if !ok {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	// c.Request.SetPathValue("user_id", userID)
-	c.Set("user_id", userID)
+	// c.Request.SetPathValue("user_uuid", userID)
+	c.Set("user_uuid", userID)
 	c.Next()
 }
 
-func createToken(userUuid string) (string, error) {
+func createToken(userUuid string, expirationHour time.Duration) (string, error) {
 	claims := jwt.MapClaims{}
-	claims["user_id"] = userUuid
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["user_uuid"] = userUuid
+	claims["exp"] = time.Now().Add(time.Hour * expirationHour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte("secret"))
+}
+
+func encodeCursor(cursor *time.Time) string {
+	if cursor == nil {
+		return ""
+	}
+	if cursor.IsZero() {
+		return ""
+	}
+	serializedCursor, err := json.Marshal(cursor)
+	if err != nil {
+		return ""
+	}
+	encodedCursor := base64.StdEncoding.EncodeToString(serializedCursor)
+	return encodedCursor
 }
