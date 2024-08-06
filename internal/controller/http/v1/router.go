@@ -37,6 +37,8 @@ func NewRouter(handler *gin.Engine, l logger.Interface, uc RouterUseCases) {
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
 
+	handler.Use(CORSMiddleware())
+
 	// Swagger
 	swaggerHandler := ginSwagger.DisablingWrapHandler(swaggerFiles.Handler, "DISABLE_SWAGGER_HTTP_HANDLER")
 	handler.GET("/swagger/*any", swaggerHandler)
