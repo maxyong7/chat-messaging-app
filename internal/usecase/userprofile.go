@@ -19,19 +19,26 @@ func NewUserProfile(r UserRepo) *UserProfileUseCase {
 }
 
 func (uc *UserProfileUseCase) GetUserProfile(ctx context.Context, userUUID string) (entity.UserProfile, error) {
-	userInfoDTO, err := uc.repo.GetUserProfile(ctx, userUUID)
+	// Get user profile from user profile data repository
+	userProfileDTO, err := uc.repo.GetUserProfile(ctx, userUUID)
+
+	//Convert userProfileDTO into user info entity object
+	userProfileEntity := userProfileDTO.ToUserInfo()
 	if err != nil {
-		return userInfoDTO.ToUserInfo(), fmt.Errorf("UserProfileUseCase - GetUserInfo - GetUserInfo: %w", err)
+		return userProfileEntity, fmt.Errorf("UserProfileUseCase - GetUserInfo - GetUserInfo: %w", err)
 	}
-	if userInfoDTO == nil {
-		return userInfoDTO.ToUserInfo(), entity.ErrUserNotFound
+	if userProfileDTO == nil {
+		return userProfileEntity, entity.ErrUserNotFound
 	}
-	return userInfoDTO.ToUserInfo(), nil
+	return userProfileEntity, nil
 }
 
-func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userInfo entity.UserProfile) error {
-	userInfoDTO := entity.UserProfileDTO(userInfo)
-	err := uc.repo.UpdateUserProfile(ctx, userInfoDTO)
+func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userProfile entity.UserProfile) error {
+	// Convert user profile entity object into userProfileDTO
+	userProfileDTO := entity.UserProfileDTO(userProfile)
+
+	// Update user profile in user profile data repository
+	err := uc.repo.UpdateUserProfile(ctx, userProfileDTO)
 	if err != nil {
 		return fmt.Errorf("UserProfileUseCase - UpdateUserProfile - UpdateUserProfile: %w", err)
 	}

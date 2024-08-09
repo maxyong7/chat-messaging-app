@@ -36,16 +36,16 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials e
 		return "", false, entity.ErrUserNotFound
 	}
 
-	// if userInfo.Password == userCredentials.Password {
-	// 	return userInfo.UserUuid, true, nil
-	// }
-
-	hashedPassword, err := hashPassword(userCredentials.Password)
-	if err != nil {
-		return "", false, err
+	if userInfo.Password == userCredentials.Password {
+		return userInfo.UserUuid, true, nil
 	}
+
+	// hashedPassword, err := hashPassword(userCredentials.Password)
+	// if err != nil {
+	// 	return "", false, err
+	// }
 	// Verify if password matches data repository
-	match := verifyPassword(hashedPassword, userInfo.Password)
+	match := verifyPassword(userCredentials.Password, userInfo.Password)
 	if match {
 		return userInfo.UserUuid, true, nil
 	}
