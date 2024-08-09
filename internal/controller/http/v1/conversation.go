@@ -364,9 +364,9 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 			SenderUUID:  senderUUID,
 			MessageUUID: deleteMessageRequest.MessageUUID,
 		}
-		valid, err := c.route.msg.ValidateMessageSentByUser(ctx, msg)
+		valid, err := c.route.msg.DeleteMessage(ctx, msg)
 		if err != nil {
-			fmt.Println("Conversation - readPump - ValidateMessageSentByUser err: ", err)
+			fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
 			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
 			c.hub.Broadcast <- errorMsg
 			break
@@ -374,13 +374,6 @@ func (c *Client) handleConversation(convReq boundary.ConversationRequestModel, u
 		if !valid {
 			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errOnlyAuthorCanDeleteMsg)
 			c.hub.Broadcast <- errorMsg
-		}
-		err = c.route.msg.DeleteMessage(ctx, msg)
-		if err != nil {
-			fmt.Println("Conversation - readPump - DeleteMessage err: ", err)
-			errorMsg := c.buildErrorMessage(senderUUID, conversationUUID, errProcessingMessage)
-			c.hub.Broadcast <- errorMsg
-			break
 		}
 		deleteMsgResponse := buildDeleteMessageResponse(msg, conversationUUID)
 		c.hub.Broadcast <- deleteMsgResponse

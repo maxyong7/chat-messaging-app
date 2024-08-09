@@ -19,11 +19,14 @@ func NewAuth(r UserRepo) *LoginUseCase {
 }
 
 func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials entity.UserCredentials) (string, bool, error) {
+	// Convert user credential entity object into userCredentialsDTO
 	userCredentialsDTO := entity.UserCredentialsDTO{
 		Username: userCredentials.Username,
 		Password: userCredentials.Password,
 		Email:    userCredentials.Email,
 	}
+
+	// Get user credentials from user data repository
 	userInfo, err := uc.repo.GetUserCredentials(ctx, userCredentialsDTO)
 	if err != nil {
 		return "", false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
@@ -33,14 +36,15 @@ func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials e
 		return "", false, entity.ErrUserNotFound
 	}
 
-	if userInfo.Password == userCredentials.Password {
-		return userInfo.UserUuid, true, nil
-	}
+	// if userInfo.Password == userCredentials.Password {
+	// 	return userInfo.UserUuid, true, nil
+	// }
 
-	hashedPassword, err := hashPassword(userCredentialsDTO.Password)
+	hashedPassword, err := hashPassword(userCredentials.Password)
 	if err != nil {
 		return "", false, err
 	}
+	// Verify if password matches data repository
 	match := verifyPassword(hashedPassword, userInfo.Password)
 	if match {
 		return userInfo.UserUuid, true, nil
@@ -53,6 +57,7 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 	if err != nil {
 		return err
 	}
+	// Convert user registration entity object into userRegistrationDTO
 	userRegistrationDTO := entity.UserRegistrationDTO{
 		Username:  userRegistration.Username,
 		Password:  hashedPassword,
@@ -61,6 +66,8 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 		LastName:  userRegistration.LastName,
 		Avatar:    userRegistration.Avatar,
 	}
+
+	// Check if user already register from user data repository
 	exist, err := uc.repo.CheckUserExist(ctx, userRegistrationDTO)
 	if err != nil {
 		return err
@@ -70,6 +77,7 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 		return entity.ErrUserAlreadyExists
 	}
 
+	// Register user in user data repository
 	err = uc.repo.StoreUserInfo(context.Background(), userRegistrationDTO)
 	if err != nil {
 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)

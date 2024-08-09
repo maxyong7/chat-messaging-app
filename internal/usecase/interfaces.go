@@ -62,8 +62,7 @@ type (
 
 	Message interface {
 		GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error)
-		DeleteMessage(ctx context.Context, msg entity.Message) error
-		ValidateMessageSentByUser(ctx context.Context, msg entity.Message) (bool, error)
+		DeleteMessage(ctx context.Context, msg entity.Message) (bool, error)
 		UpdateSeenStatus(ctx context.Context, seenStatus entity.SeenStatus) error
 		GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error)
 		SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error)
