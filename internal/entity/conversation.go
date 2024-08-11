@@ -19,6 +19,7 @@ type ConversationDTO struct {
 }
 
 type ConversationList struct {
+	ConversationUUID     *string     `json:"conversation_uuid"`
 	Title                *string     `json:"title"`
 	LastMessage          *string     `json:"last_message"`
 	LastSentUser         UserProfile `json:"last_sent_user"`

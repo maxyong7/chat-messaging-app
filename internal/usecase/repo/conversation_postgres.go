@@ -60,6 +60,7 @@ func (r *ConversationRepo) GetConversationList(ctx context.Context, reqParam ent
 
 	finalQuery := `
 		SELECT
+			c.conversation_uuid,
 			c.last_message,
 			c.title,
 			c.last_message_created_at,
@@ -89,6 +90,7 @@ func (r *ConversationRepo) GetConversationList(ctx context.Context, reqParam ent
 	for rows.Next() {
 		var conv entity.ConversationList
 		if err := rows.Scan(
+			&conv.ConversationUUID,
 			&conv.LastMessage,
 			&conv.Title,
 			&conv.LastMessageCreatedAt,
