@@ -22,10 +22,11 @@ func NewConversation(r ConversationRepo) *ConversationUseCase {
 }
 
 func (uc *ConversationUseCase) GetConversationList(ctx context.Context, reqParam entity.RequestParams) ([]entity.ConversationList, error) {
-	// Convert request parameter entity object into DTO
+	// Convert request parameter entity object into reqParamDTO
 	reqParamDTO := entity.RequestParamsDTO(reqParam)
 
-	// Use converted DTO to get conversation list from conversation data repository
+	// Use reqParamDTO to get a conversation list from conversation data repository
+	// It queries 'contacts' (direct message) table and 'participants' (group message) table
 	conversations, err := uc.repo.GetConversationList(ctx, reqParamDTO)
 	if err != nil {
 		return nil, fmt.Errorf("ConversationUseCase - GetConversation - s.repo.GetConversationList: %w", err)
@@ -39,7 +40,7 @@ func (uc *ConversationUseCase) GetConversationList(ctx context.Context, reqParam
 }
 
 func (uc *ConversationUseCase) StoreConversationAndMessage(ctx context.Context, conv entity.Conversation) error {
-	// Convert conversation entity object into DTO
+	// Convert conversation entity object into convDTO
 	convDTO := entity.ConversationDTO{
 		SenderUUID:       conv.SenderUUID,
 		ConversationUUID: conv.ConversationUUID,
@@ -48,7 +49,9 @@ func (uc *ConversationUseCase) StoreConversationAndMessage(ctx context.Context, 
 		CreatedAt:        conv.CreatedAt,
 	}
 
-	// Insert conversation and message into conversation data repository
+	// Insert message into 'messages' table to store the entire conversation history
+	// and Upsert 'conversations' table with the most recent message
+	// using conversation data repository
 	err := uc.repo.InsertConversationAndMessage(ctx, convDTO)
 	if err != nil {
 		return fmt.Errorf("ConversationUseCase - StoreConversation - uc.repo.InsertConversationAndMessage: %w", err)

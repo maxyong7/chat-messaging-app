@@ -26,7 +26,8 @@ func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqPa
 	// Convert request parameter entity object into reqParamDTO
 	reqParamDTO := entity.RequestParamsDTO(reqParam)
 
-	// Get messages from message data repository
+	// Get messages from message data repository by querying 'messages' table
+	// Then join 'user_info' table on 'user_uuid' to get user's firstname, lastname and avatar
 	messages, err := uc.msgRepo.GetMessages(ctx, reqParamDTO, conversationUUID)
 	if err != nil {
 		return nil, fmt.Errorf("MessageUseCase - GetMessages - uc.msgRepo.GetMessages: %w", err)
@@ -36,7 +37,7 @@ func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqPa
 	}
 
 	for i, msg := range messages {
-		// For each message, get reactions from reaction data repository
+		// For each message, get reactions by querying 'reaction' table on 'message_uuid' from reaction data repository
 		reactions, err := uc.reactionRepo.GetReactions(ctx, msg.MessageUUID)
 		if err != nil {
 			return nil, fmt.Errorf("MessageUseCase - GetMessages - uc.reactionRepo.GetReactions: %w", err)
@@ -54,7 +55,7 @@ func (uc *MessageUseCase) UpdateSeenStatus(ctx context.Context, seenStatus entit
 		ConversationUUID: seenStatus.ConversationUUID,
 	}
 
-	// Update seen status in message data repository
+	// Update 'seen_status' table in message data repository
 	err := uc.msgRepo.UpdateSeenStatus(ctx, seenStatusDTO)
 	if err != nil {
 		return fmt.Errorf("MessageUseCase - UpdateSeenStatus - uc.msgRepo.UpdateSeenStatus: %w", err)
@@ -63,7 +64,7 @@ func (uc *MessageUseCase) UpdateSeenStatus(ctx context.Context, seenStatus entit
 }
 
 func (uc *MessageUseCase) GetSeenStatus(ctx context.Context, messageUUID string) ([]entity.GetSeenStatusDTO, error) {
-	// Get seen status from message data repository
+	// Get seen status by querting 'seen_status' table from message data repository
 	seenStatus, err := uc.msgRepo.GetSeenStatus(ctx, messageUUID)
 	if err != nil {
 		return nil, fmt.Errorf("MessageUseCase - GetSeenStatus - uc.msgRepo.GetSeenStatus: %w", err)
@@ -72,13 +73,15 @@ func (uc *MessageUseCase) GetSeenStatus(ctx context.Context, messageUUID string)
 }
 
 func (uc *MessageUseCase) SearchMessage(ctx context.Context, keyword string, conversationUUID string) ([]entity.SearchMessageDTO, error) {
-	// Search message from message data repository
+	// Search message from message data repository by querying 'messages' table
+	// Then join 'user_info' table on 'user_uuid' to get user's firstname, lastname and avatar
 	messages, err := uc.msgRepo.SearchMessage(ctx, keyword, conversationUUID)
 	if err != nil {
 		return nil, fmt.Errorf("MessageUseCase - GetSeenStatus - uc.msgRepo.GetSeenStatus: %w", err)
 	}
 
 	for i, msg := range messages {
+		// For each message found, set the cursor time to include the keyword
 		inclusiveCursorTime := msg.CreatedAt.Add(-1 * time.Millisecond)
 		messages[i].Cursor = encodeCursor(&inclusiveCursorTime)
 	}
@@ -92,18 +95,18 @@ func (uc *MessageUseCase) DeleteMessage(ctx context.Context, msg entity.Message)
 		MessageUUID: msg.MessageUUID,
 	}
 
-	// Validate message is sent by user in message data repository
+	// Validate message is sent by user in message data repository by querying 'messages' table
 	valid, err := uc.msgRepo.ValidateMessageSentByUser(ctx, msgDTO)
 	if err != nil {
 		return valid, fmt.Errorf("MessageUseCase - DeleteMessage - uc.msgRepo.DeleteMessage: %w", err)
 	}
 
-	// If message is not sent by user, return with validation fail
+	// If message is not sent by user, return fail validation. Will be handled by controller.
 	if !valid {
 		return valid, nil
 	}
 
-	// If message sent by user, delete message in data repository
+	// If message sent by user, delete message in 'messages' table via message data repository
 	err = uc.msgRepo.DeleteMessage(ctx, msgDTO)
 	if err != nil {
 		return valid, fmt.Errorf("MessageUseCase - DeleteMessage - uc.msgRepo.DeleteMessage: %w", err)

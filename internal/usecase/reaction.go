@@ -25,7 +25,7 @@ func (uc *ReactionUseCase) StoreReaction(ctx context.Context, reaction entity.Re
 		ReactionType: reaction.ReactionType,
 	}
 
-	// Store reaction into reaction data repository
+	// Store reaction into 'reaction' table using reaction data repository
 	err := uc.reactionRepo.StoreReaction(ctx, storeReactionDTO)
 	if err != nil {
 		return fmt.Errorf("ReactionUseCase - StoreReaction - uc.reactionRepo.StoreReaction: %w", err)
@@ -40,7 +40,7 @@ func (uc *ReactionUseCase) RemoveReaction(ctx context.Context, reaction entity.R
 		SenderUUID:  reaction.SenderUUID,
 	}
 
-	// Remove reaction in reaction data repository
+	// Remove reaction from 'reaction' table using reaction data repository
 	err := uc.reactionRepo.RemoveReaction(ctx, removeReactionDTO)
 	if err != nil {
 		return fmt.Errorf("ReactionUseCase - RemoveReaction - uc.reactionRepo.RemoveReaction: %w", err)

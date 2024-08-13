@@ -19,7 +19,7 @@ func NewUserProfile(r UserRepo) *UserProfileUseCase {
 }
 
 func (uc *UserProfileUseCase) GetUserProfile(ctx context.Context, userUUID string) (entity.UserProfile, error) {
-	// Get user profile from user profile data repository
+	// Get user profile from user profile data repository by querying 'user_info' table
 	userProfileDTO, err := uc.repo.GetUserProfile(ctx, userUUID)
 
 	//Convert userProfileDTO into user info entity object
@@ -27,9 +27,12 @@ func (uc *UserProfileUseCase) GetUserProfile(ctx context.Context, userUUID strin
 	if err != nil {
 		return userProfileEntity, fmt.Errorf("UserProfileUseCase - GetUserInfo - GetUserInfo: %w", err)
 	}
+
+	// Return error if user is not found. Will be handled by controller
 	if userProfileDTO == nil {
 		return userProfileEntity, entity.ErrUserNotFound
 	}
+
 	return userProfileEntity, nil
 }
 
@@ -37,7 +40,7 @@ func (uc *UserProfileUseCase) UpdateUserProfile(ctx context.Context, userProfile
 	// Convert user profile entity object into userProfileDTO
 	userProfileDTO := entity.UserProfileDTO(userProfile)
 
-	// Update user profile in user profile data repository
+	// Update user profile in 'user_info' table using user data repository
 	err := uc.repo.UpdateUserProfile(ctx, userProfileDTO)
 	if err != nil {
 		return fmt.Errorf("UserProfileUseCase - UpdateUserProfile - UpdateUserProfile: %w", err)
