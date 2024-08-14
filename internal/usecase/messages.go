@@ -22,7 +22,8 @@ func NewMessage(m MessageRepo, r ReactionRepo) *MessageUseCase {
 	}
 }
 
-func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context, reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error) {
+func (uc *MessageUseCase) GetMessagesFromConversation(ctx context.Context,
+	reqParam entity.RequestParams, conversationUUID string) ([]entity.GetMessageDTO, error) {
 	// Convert request parameter entity object into reqParamDTO
 	reqParamDTO := entity.RequestParamsDTO(reqParam)
 
