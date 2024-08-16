@@ -2,7 +2,7 @@ package boundary
 
 import "github.com/maxyong7/chat-messaging-app/internal/entity"
 
-type RegisterUserRequestModel struct {
+type RegistrationForm struct {
 	Username  string `json:"username" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 	Email     string `json:"email" binding:"required"`
@@ -11,16 +11,16 @@ type RegisterUserRequestModel struct {
 	Avatar    string `json:"avatar,omitempty"`
 }
 
-type VerifyUserRequestModel struct {
+type LoginForm struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-type VerifyUserResponseModel struct {
+type LogoutScreen struct {
 	Token string `json:"token,omitempty"`
 }
 
-func (r RegisterUserRequestModel) ToUserRegistration() entity.UserRegistration {
+func (r RegistrationForm) ToUserRegistration() entity.UserRegistration {
 	return entity.UserRegistration{
 		UserCredentials: entity.UserCredentials{
 			Username: r.Username,
@@ -33,7 +33,7 @@ func (r RegisterUserRequestModel) ToUserRegistration() entity.UserRegistration {
 	}
 }
 
-func (r VerifyUserRequestModel) ToVerifyCredentials() entity.UserCredentials {
+func (r LoginForm) ToUserCredentials() entity.UserCredentials {
 	return entity.UserCredentials{
 		Username: r.Username,
 		Password: r.Password,

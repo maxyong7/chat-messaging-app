@@ -10,8 +10,8 @@ import (
 //go:generate mockgen -source=interfaces.go -destination=./mocks_test.go -package=usecase_test
 
 type (
-	// Verification -.
-	Verification interface {
+	// User -.
+	User interface {
 		VerifyCredentials(context.Context, entity.UserCredentials) (string, bool, error)
 		RegisterUser(context.Context, entity.UserRegistration) error
 	}
