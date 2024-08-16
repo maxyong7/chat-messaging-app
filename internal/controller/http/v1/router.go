@@ -16,7 +16,7 @@ import (
 )
 
 type RouterUseCases struct {
-	Verification usecase.Verification
+	Verification usecase.User
 	Conversation usecase.Conversation
 	Contact      usecase.Contact
 	Message      usecase.Message
