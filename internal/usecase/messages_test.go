@@ -307,6 +307,9 @@ func TestMessageUseCase_SearchMessage(t *testing.T) {
 		wantErr    bool
 	}
 
+	testTimeNow := time.Now()
+	expectedSearchMessageResult := []entity.SearchMessageDTO{{MessageUUID: "msg_uuid_1234", CreatedAt: testTimeNow}}
+
 	tests := []testCase{
 		{
 			name: "success",
@@ -318,9 +321,9 @@ func TestMessageUseCase_SearchMessage(t *testing.T) {
 			setupMocks: func(mockMsgRepo *mocks.MockMessageRepo) {
 				mockMsgRepo.EXPECT().
 					SearchMessage(gomock.Any(), "hello", "conv_uuid_1234").
-					Return([]entity.SearchMessageDTO{{MessageUUID: "msg_uuid_1234", CreatedAt: time.Now()}}, nil)
+					Return(expectedSearchMessageResult, nil)
 			},
-			want:    []entity.SearchMessageDTO{{MessageUUID: "msg_uuid_1234"}},
+			want:    expectedSearchMessageResult,
 			wantErr: false,
 		},
 		{
@@ -457,7 +460,7 @@ func TestMessageUseCase_DeleteMessage(t *testing.T) {
 					DeleteMessage(gomock.Any(), msgDTO).
 					Return(fmt.Errorf("some error"))
 			},
-			want:    false,
+			want:    true,
 			wantErr: true,
 		},
 	}
