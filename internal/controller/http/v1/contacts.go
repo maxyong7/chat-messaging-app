@@ -107,7 +107,7 @@ func (r *contactRoute) removeContact(c *gin.Context) {
 	err = r.t.RemoveContact(c.Request.Context(), contactUserName, userId)
 	if err != nil {
 		// Logs the error
-		r.l.Error(err, "http - v1 - addContact - AddContacts")
+		r.l.Error(err, "http - v1 - removeContact - RemoveContact")
 
 		// If its a known defined error, it writes the status code and return a JSON body with error field accordingly.
 		// Else, it defaults to 500 status code and returns 'internal server error' in error field of the JSON body
