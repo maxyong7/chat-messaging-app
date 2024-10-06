@@ -31,7 +31,6 @@ func (r *MessageRepo) GetMessages(ctx context.Context, reqParam entity.RequestPa
 			ui.avatar
 		FROM messages m
 		LEFT JOIN user_info ui ON m.user_uuid = ui.user_uuid
-		LEFT JOIN reaction r ON m.message_uuid = r.message_uuid
 		WHERE m.conversation_uuid = $1
 		AND m.created_at < $2
 		ORDER BY m.created_at DESC
@@ -224,7 +223,6 @@ func (r *MessageRepo) SearchMessage(ctx context.Context, keyword string, convers
 			ui.avatar
 		FROM messages m
 		LEFT JOIN user_info ui ON m.user_uuid = ui.user_uuid
-		LEFT JOIN reaction r ON m.message_uuid = r.message_uuid
 		WHERE m.content ILIKE '%' || $1 || '%' 
 		AND m.conversation_uuid = $2
 	`

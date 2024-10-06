@@ -35,7 +35,7 @@ type ConversationResponseData struct {
 	SenderUUID       string `json:"sender_uuid"`
 	ConversationUUID string `json:"conversation_uuid"`
 	SendMessageResponseData
-	DeleteMessageResponseData
+	MessageDeletionConfirmation
 	ReactionResponseData
 	ErrorResponseData
 }

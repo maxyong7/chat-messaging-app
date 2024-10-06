@@ -6,7 +6,7 @@ import (
 	"github.com/maxyong7/chat-messaging-app/internal/entity"
 )
 
-type SendMessageRequest struct {
+type ChatInterface struct {
 	Content string `json:"content"`
 }
 
@@ -22,27 +22,27 @@ type SendMessageResponseData struct {
 	MessageUUID     string    `json:"message_uuid"`
 	CreatedAt       time.Time `json:"created_at"`
 }
-type DeleteMessageResponseData struct {
+type MessageDeletionConfirmation struct {
 	MessageUUID string `json:"message_uuid"`
 }
 
-type GetMessageResponseModel struct {
-	Data       GetMessageResponseData `json:"data"`
-	Pagination Pagination             `json:"pagination"`
+type ConversationScreen struct {
+	Data       ConversationData `json:"data"`
+	Pagination Pagination       `json:"pagination"`
 }
 
-type GetMessageResponseData struct {
+type ConversationData struct {
 	Messages []entity.GetMessageDTO `json:"messages"`
 }
 
-type GetSeenStatusResponseModel struct {
+type MessageStatusIndicator struct {
 	SeenStatus []entity.GetSeenStatusDTO `json:"seen_status"`
 }
 
-type SearchMessageResponseModel struct {
-	Data SearchMessageResponseData `json:"data"`
+type MessageSearchScreen struct {
+	Data MessageSearchData `json:"data"`
 }
 
-type SearchMessageResponseData struct {
+type MessageSearchData struct {
 	Messages []entity.SearchMessageDTO `json:"messages"`
 }

@@ -44,7 +44,7 @@ func (r *ContactsRepo) GetContactsByUserUUID(ctx context.Context, userUuid strin
 	// Define the SQL query.
 	query := `
 		SELECT 
-			c.user_uuid,
+			ct.user_uuid,
 			ui.first_name,
 			ui.last_name,
 			ui.avatar,

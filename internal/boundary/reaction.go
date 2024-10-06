@@ -1,6 +1,6 @@
 package boundary
 
-type AddReactionRequest struct {
+type MessageReactionMenu struct {
 	MessageUUID  string `json:"message_uuid"`
 	ReactionType string `json:"reaction_type"`
 }

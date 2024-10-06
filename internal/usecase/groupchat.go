@@ -28,18 +28,22 @@ func (uc *GroupChatUseCase) CreateGroupChat(ctx context.Context, groupChat entit
 }
 
 func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChat entity.GroupChat) error {
-	// Check if user is in groupchat before allowing to add participant
+	// Convert groupChat entity object into groupChatDTO
 	groupChatDTO := toGroupChatDTO(groupChat)
+
+	// Check if user is in groupchat by querying 'participants' table from group chat data repository
 	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
+
+	// If user not in group chat, dont allow user to add participant. Returned error will be handled by controller
 	if !exist {
 		return entity.ErrUserNotInGroupChat
 	}
 
 	for i := range groupChatDTO.Participants {
-		// Check if participant is in groupchat
+		// Check if participant is in groupchat by querying 'participants' table from group chat data repository
 		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.Participants[i].ParticipantUUID)
 		if err != nil {
 			return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
@@ -49,6 +53,7 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChat entity
 		}
 	}
 
+	// Add participants into 'participants' table using group chat data repository
 	err = uc.repo.AddParticipants(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - AddParticipant - uc.repo.AddParticipants: %w", err)
@@ -57,18 +62,22 @@ func (uc *GroupChatUseCase) AddParticipant(ctx context.Context, groupChat entity
 }
 
 func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChat entity.GroupChat) error {
+	// Convert groupChat entity object into groupChatDTO
 	groupChatDTO := toGroupChatDTO(groupChat)
-	// Check if user is in groupchat before allowing to remove participant
+
+	// Check if user is in groupchat by querying 'participants' table from group chat data repository
 	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
+
+	// If user not in group chat, dont allow user to remove participant. Returned error will be handled by controller
 	if !exist {
 		return entity.ErrUserNotInGroupChat
 	}
 
 	for i := range groupChatDTO.Participants {
-		// Check if participant is in groupchat
+		// Check if participant is in groupchat by querying 'participants' table from group chat data repository
 		exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.Participants[i].ParticipantUUID)
 		if err != nil {
 			return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.ValidateUserInGroupChat: %w", err)
@@ -78,6 +87,7 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChat ent
 		}
 	}
 
+	// Remove participants in 'participants' table using group chat data repository
 	err = uc.repo.RemoveParticipants(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - RemoveParticipant - uc.repo.RemoveParticipants: %w", err)
@@ -86,16 +96,20 @@ func (uc *GroupChatUseCase) RemoveParticipant(ctx context.Context, groupChat ent
 }
 
 func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChat entity.GroupChat) error {
+	// Convert groupChat entity object into groupChatDTO
 	groupChatDTO := toGroupChatDTO(groupChat)
-	// Check if user is in groupchat before allowing to update group title
+
+	// Check if user is in groupchat by querying 'participants' table from group chat data repository
 	exist, err := uc.repo.ValidateUserInGroupChat(ctx, groupChatDTO.ConversationUUID, groupChatDTO.UserUUID)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.ValidateUserInGroupChat: %w", err)
 	}
+	// If user not in group chat, dont allow user to update group title. Returned error will be handled by controller
 	if !exist {
 		return entity.ErrUserNotInGroupChat
 	}
 
+	// Update group title in 'conversations' table using group chat data repository
 	err = uc.repo.UpdateGroupTitle(ctx, groupChatDTO)
 	if err != nil {
 		return fmt.Errorf("GroupChatUseCase - UpdateGroupTitle - uc.repo.UpdateGroupTitles: %w", err)
@@ -103,6 +117,7 @@ func (uc *GroupChatUseCase) UpdateGroupTitle(ctx context.Context, groupChat enti
 	return nil
 }
 
+// Convert group chat entity object to group chat DTO
 func toGroupChatDTO(gc entity.GroupChat) entity.GroupChatDTO {
 	participantsDTO := []entity.ParticipantDTO{}
 	for _, p := range gc.Participants {

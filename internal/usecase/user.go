@@ -19,40 +19,44 @@ func NewAuth(r UserRepo) *LoginUseCase {
 }
 
 func (uc *LoginUseCase) VerifyCredentials(ctx context.Context, userCredentials entity.UserCredentials) (string, bool, error) {
+	// Convert user credential entity object into userCredentialsDTO
 	userCredentialsDTO := entity.UserCredentialsDTO{
 		Username: userCredentials.Username,
 		Password: userCredentials.Password,
 		Email:    userCredentials.Email,
 	}
+
+	// Get user credentials from user data repository by querying 'user_credentials' table
 	userInfo, err := uc.repo.GetUserCredentials(ctx, userCredentialsDTO)
 	if err != nil {
 		return "", false, fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.GetUserInfo: %w", err)
 	}
 
+	// Return error if user is not found. Will be handled by controller
 	if userInfo == nil {
 		return "", false, entity.ErrUserNotFound
 	}
 
-	if userInfo.Password == userCredentials.Password {
-		return userInfo.UserUuid, true, nil
-	}
+	// if userInfo.Password == userCredentials.Password {
+	// 	return userInfo.UserUuid, true, nil
+	// }
 
-	hashedPassword, err := hashPassword(userCredentialsDTO.Password)
-	if err != nil {
-		return "", false, err
-	}
-	match := verifyPassword(hashedPassword, userInfo.Password)
+	// Verify if password matches
+	match := verifyPassword(userCredentials.Password, userInfo.Password)
 	if match {
 		return userInfo.UserUuid, true, nil
 	}
+	// Return error if password does not match found. Will be handled by controller
 	return "", false, entity.ErrIncorrectPassword
 }
 
 func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entity.UserRegistration) error {
+	// Hash password before storing into database
 	hashedPassword, err := hashPassword(userRegistration.Password)
 	if err != nil {
 		return err
 	}
+	// Convert user registration entity object into userRegistrationDTO
 	userRegistrationDTO := entity.UserRegistrationDTO{
 		Username:  userRegistration.Username,
 		Password:  hashedPassword,
@@ -61,15 +65,19 @@ func (uc *LoginUseCase) RegisterUser(ctx context.Context, userRegistration entit
 		LastName:  userRegistration.LastName,
 		Avatar:    userRegistration.Avatar,
 	}
+
+	// Check if user already register from user data repository by querying 'user_credentials' table
 	exist, err := uc.repo.CheckUserExist(ctx, userRegistrationDTO)
 	if err != nil {
 		return err
 	}
 
+	// Return error if user already exist. Will be handled by controller
 	if exist {
 		return entity.ErrUserAlreadyExists
 	}
 
+	// If user does not exist, store user into 'user_credentials' table using user data repository
 	err = uc.repo.StoreUserInfo(context.Background(), userRegistrationDTO)
 	if err != nil {
 		return fmt.Errorf("LoginUseCase - VerifyCredentials - s.repo.Store: %w", err)
