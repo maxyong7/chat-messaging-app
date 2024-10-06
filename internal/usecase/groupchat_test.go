@@ -107,6 +107,127 @@ func TestGroupChatUseCase_CreateGroupChat(t *testing.T) {
 	}
 }
 
+func TestGroupChatUseCase_UpdateGroupTitle(t *testing.T) {
+	// Define the input arguments for the method being tested
+	type args struct {
+		ctx       context.Context  // Context provides request-scoped values and cancellation signals
+		groupChat entity.GroupChat // The GroupChat entity representing the chat group whose title is being updated
+	}
+
+	// Define the structure of each test case
+	type testCase struct {
+		name       string                                  // Name of the test case, used to identify the test in the output
+		args       args                                    // The input arguments for the test case
+		setupMocks func(mockRepo *mocks.MockGroupChatRepo) // Function to set up mock behavior for the test
+		wantErr    bool                                    // Whether the test expects an error to occur
+	}
+
+	// Define the test cases
+	tests := []testCase{
+		{
+			name: "success", // Test case name
+			args: args{
+				ctx: context.Background(),
+				groupChat: entity.GroupChat{
+					UserUUID:         "user_uuid_1234",  // The UUID of the user updating the group title
+					ConversationUUID: "conv_uuid_1234",  // The UUID of the conversation associated with the group
+					Title:            "New Group Title", // The new title of the group
+				},
+			},
+			// This function sets up the expected behavior of the mock repository for this test case
+			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
+				groupChatDTO := toGroupChatDTO(entity.GroupChat{
+					UserUUID:         "user_uuid_1234",
+					ConversationUUID: "conv_uuid_1234",
+					Title:            "New Group Title",
+				})
+				// Simulate that the user is in the group chat and the title is successfully updated
+				mockRepo.EXPECT().
+					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
+					Return(true, nil)
+				mockRepo.EXPECT().
+					UpdateGroupTitle(gomock.Any(), groupChatDTO).
+					Return(nil) // Simulate successful update of the group title
+			},
+			wantErr: false, // The test does not expect an error to occur
+		},
+		{
+			name: "user not in group chat", // Test case for when the user is not part of the group chat
+			args: args{
+				ctx: context.Background(),
+				groupChat: entity.GroupChat{
+					UserUUID:         "user_uuid_1234",
+					ConversationUUID: "conv_uuid_1234",
+					Title:            "New Group Title",
+				},
+			},
+			// This function sets up the mock to simulate that the user is not in the group chat
+			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
+				mockRepo.EXPECT().
+					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
+					Return(false, nil) // Simulate that the user is not in the group chat
+			},
+			wantErr: true, // The test expects an error to occur
+		},
+		{
+			name: "error updating group title", // Test case for when an error occurs during title update
+			args: args{
+				ctx: context.Background(),
+				groupChat: entity.GroupChat{
+					UserUUID:         "user_uuid_1234",
+					ConversationUUID: "conv_uuid_1234",
+					Title:            "New Group Title",
+				},
+			},
+			// This function sets up the mock to simulate an error occurring when updating the group title
+			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
+				groupChatDTO := toGroupChatDTO(entity.GroupChat{
+					UserUUID:         "user_uuid_1234",
+					ConversationUUID: "conv_uuid_1234",
+					Title:            "New Group Title",
+				})
+				mockRepo.EXPECT().
+					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
+					Return(true, nil) // Simulate that the user is in the group chat
+				mockRepo.EXPECT().
+					UpdateGroupTitle(gomock.Any(), groupChatDTO).
+					Return(fmt.Errorf("some error")) // Simulate an error occurring during update
+			},
+			wantErr: true, // The test expects an error to occur
+		},
+	}
+
+	// Iterate over each test case and run it
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new mock controller for managing the lifecycle of the mock objects
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish() // Ensure that the mock expectations are checked and cleaned up after the test
+
+			// Create a mock instance of the GroupChatRepo interface
+			mockRepo := mocks.NewMockGroupChatRepo(ctrl)
+
+			// Set up the mock expectations using the setupMocks function provided in the test case
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockRepo)
+			}
+
+			// Create an instance of GroupChatUseCase using the mock repository
+			uc := &GroupChatUseCase{
+				repo: mockRepo,
+			}
+
+			// Call the method under test with the provided arguments
+			err := uc.UpdateGroupTitle(tt.args.ctx, tt.args.groupChat)
+
+			// Check if the error status matches the expected value
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GroupChatUseCase.UpdateGroupTitle() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestGroupChatUseCase_AddParticipant(t *testing.T) {
 	// Define the input arguments for the method being tested
 	type args struct {
@@ -356,127 +477,6 @@ func TestGroupChatUseCase_RemoveParticipant(t *testing.T) {
 			// Check if the error status matches the expected value
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GroupChatUseCase.RemoveParticipant() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestGroupChatUseCase_UpdateGroupTitle(t *testing.T) {
-	// Define the input arguments for the method being tested
-	type args struct {
-		ctx       context.Context  // Context provides request-scoped values and cancellation signals
-		groupChat entity.GroupChat // The GroupChat entity representing the chat group whose title is being updated
-	}
-
-	// Define the structure of each test case
-	type testCase struct {
-		name       string                                  // Name of the test case, used to identify the test in the output
-		args       args                                    // The input arguments for the test case
-		setupMocks func(mockRepo *mocks.MockGroupChatRepo) // Function to set up mock behavior for the test
-		wantErr    bool                                    // Whether the test expects an error to occur
-	}
-
-	// Define the test cases
-	tests := []testCase{
-		{
-			name: "success", // Test case name
-			args: args{
-				ctx: context.Background(),
-				groupChat: entity.GroupChat{
-					UserUUID:         "user_uuid_1234",  // The UUID of the user updating the group title
-					ConversationUUID: "conv_uuid_1234",  // The UUID of the conversation associated with the group
-					Title:            "New Group Title", // The new title of the group
-				},
-			},
-			// This function sets up the expected behavior of the mock repository for this test case
-			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
-				groupChatDTO := toGroupChatDTO(entity.GroupChat{
-					UserUUID:         "user_uuid_1234",
-					ConversationUUID: "conv_uuid_1234",
-					Title:            "New Group Title",
-				})
-				// Simulate that the user is in the group chat and the title is successfully updated
-				mockRepo.EXPECT().
-					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
-					Return(true, nil)
-				mockRepo.EXPECT().
-					UpdateGroupTitle(gomock.Any(), groupChatDTO).
-					Return(nil) // Simulate successful update of the group title
-			},
-			wantErr: false, // The test does not expect an error to occur
-		},
-		{
-			name: "user not in group chat", // Test case for when the user is not part of the group chat
-			args: args{
-				ctx: context.Background(),
-				groupChat: entity.GroupChat{
-					UserUUID:         "user_uuid_1234",
-					ConversationUUID: "conv_uuid_1234",
-					Title:            "New Group Title",
-				},
-			},
-			// This function sets up the mock to simulate that the user is not in the group chat
-			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
-				mockRepo.EXPECT().
-					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
-					Return(false, nil) // Simulate that the user is not in the group chat
-			},
-			wantErr: true, // The test expects an error to occur
-		},
-		{
-			name: "error updating group title", // Test case for when an error occurs during title update
-			args: args{
-				ctx: context.Background(),
-				groupChat: entity.GroupChat{
-					UserUUID:         "user_uuid_1234",
-					ConversationUUID: "conv_uuid_1234",
-					Title:            "New Group Title",
-				},
-			},
-			// This function sets up the mock to simulate an error occurring when updating the group title
-			setupMocks: func(mockRepo *mocks.MockGroupChatRepo) {
-				groupChatDTO := toGroupChatDTO(entity.GroupChat{
-					UserUUID:         "user_uuid_1234",
-					ConversationUUID: "conv_uuid_1234",
-					Title:            "New Group Title",
-				})
-				mockRepo.EXPECT().
-					ValidateUserInGroupChat(gomock.Any(), "conv_uuid_1234", "user_uuid_1234").
-					Return(true, nil) // Simulate that the user is in the group chat
-				mockRepo.EXPECT().
-					UpdateGroupTitle(gomock.Any(), groupChatDTO).
-					Return(fmt.Errorf("some error")) // Simulate an error occurring during update
-			},
-			wantErr: true, // The test expects an error to occur
-		},
-	}
-
-	// Iterate over each test case and run it
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create a new mock controller for managing the lifecycle of the mock objects
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish() // Ensure that the mock expectations are checked and cleaned up after the test
-
-			// Create a mock instance of the GroupChatRepo interface
-			mockRepo := mocks.NewMockGroupChatRepo(ctrl)
-
-			// Set up the mock expectations using the setupMocks function provided in the test case
-			if tt.setupMocks != nil {
-				tt.setupMocks(mockRepo)
-			}
-
-			// Create an instance of GroupChatUseCase using the mock repository
-			uc := &GroupChatUseCase{
-				repo: mockRepo,
-			}
-
-			// Call the method under test with the provided arguments
-			err := uc.UpdateGroupTitle(tt.args.ctx, tt.args.groupChat)
-
-			// Check if the error status matches the expected value
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GroupChatUseCase.UpdateGroupTitle() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
