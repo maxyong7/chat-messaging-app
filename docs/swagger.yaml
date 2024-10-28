@@ -1,105 +1,758 @@
-basePath: /v1
-definitions:
-  entity.Translation:
-    properties:
-      destination:
-        example: en
-        type: string
-      original:
-        example: текст для перевода
-        type: string
-      source:
-        example: auto
-        type: string
-      translation:
-        example: text for translation
-        type: string
-    type: object
-  v1.doTranslateRequest:
-    properties:
-      destination:
-        example: en
-        type: string
-      original:
-        example: текст для перевода
-        type: string
-      source:
-        example: auto
-        type: string
-    required:
-      - destination
-      - original
-      - source
-    type: object
-  v1.historyResponse:
-    properties:
-      history:
-        items:
-          $ref: '#/definitions/entity.Translation'
-        type: array
-    type: object
-  v1.response:
-    properties:
-      error:
-        example: message
-        type: string
-    type: object
-host: localhost:8080
+openapi: 3.0.3
 info:
-  contact: {}
-  description: Using a translation service as an example
-  title: Go Clean Template API
-  version: "1.0"
+  title: Chat Application API
+  description: API for managing contacts and conversations, including real-time messaging through WebSocket.
+  version: 1.0.0
+
 paths:
-  /translation/do-translate:
+  /contact:
+    get:
+      tags:
+        - Contacts
+      summary: Get Contacts
+      description: Retrieves the list of contacts for the authenticated user.
+      operationId: getContacts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    blocked:
+                      type: boolean
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /contact/{username}/add:
     post:
-      consumes:
-        - application/json
-      description: Translate a text
-      operationId: do-translate
+      tags:
+        - Contacts
+      summary: Add Contact
+      description: Adds a contact by username to the authenticated user's contact list.
+      operationId: addContact
+      security:
+        - bearerAuth: []
       parameters:
-        - description: Set up translation
-          in: body
-          name: request
+        - in: path
+          name: username
           required: true
           schema:
-            $ref: '#/definitions/v1.doTranslateRequest'
-      produces:
-        - application/json
+            type: string
+          description: Username to be added.
       responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/entity.Translation'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/v1.response'
-        "500":
+        '201':
+          description: Contact added successfully
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity - missing or invalid parameters
+        '500':
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/v1.response'
-      summary: Translate
+
+  /contact/{username}/remove:
+    post:
       tags:
-        - translation
-  /translation/history:
+        - Contacts
+      summary: Remove Contact
+      description: Removes a contact from the authenticated user's contact list.
+      operationId: removeContact
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+          description: Username to be removed.
+      responses:
+        '204':
+          description: Contact removed successfully
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity - missing or invalid parameters
+        '500':
+          description: Internal Server Error
+
+  /contact/{username}:
+    patch:
+      tags:
+        - Contacts
+      summary: Update Block Contact
+      description: Updates the block status of a contact.
+      operationId: updateBlockContact
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+          description: Username of the contact.
+        - in: query
+          name: block
+          required: true
+          schema:
+            type: string
+            enum: [true, false]
+          description: Block status to be set (true or false).
+      responses:
+        '204':
+          description: Block status updated successfully
+        '401':
+          description: Unauthorized
+        '422':
+          description: Unprocessable Entity - missing or invalid parameters
+        '500':
+          description: Internal Server Error
+
+  /conversation:
     get:
-      consumes:
-        - application/json
-      description: Show all translation history
-      operationId: history
-      produces:
-        - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.historyResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/v1.response'
-      summary: Show history
       tags:
-        - translation
-swagger: "2.0"
+        - Conversations
+      summary: Get Conversations
+      description: Retrieves a paginated list of conversations for the authenticated user.
+      operationId: getConversations
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Encoded timestamp for pagination (optional).
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Number of conversations to retrieve (optional).
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            conversationUUID:
+                              type: string
+                            lastMessage:
+                              type: string
+                            lastMessageCreatedAt:
+                              type: string
+                              format: date-time
+                  pagination:
+                    type: object
+                    properties:
+                      cursor:
+                        type: string
+                        description: Next page cursor for pagination.
+                      limit:
+                        type: integer
+                        description: Limit of records returned.
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /conversation/ws/{conversationId}:
+    get:
+      tags:
+        - Conversations
+      summary: WebSocket for Conversation
+      description: Establishes a WebSocket connection for a specific conversation to send and receive messages in real-time.
+      operationId: serveWsController
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: UUID of the conversation.
+      responses:
+        '101':
+          description: WebSocket protocol handshake successful
+        '401':
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+
+  /groupchat/create:
+    post:
+      tags:
+        - GroupChat
+      summary: Create Group Chat
+      description: Creates a new group chat with the provided title and participants.
+      operationId: createGroupChat
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupChatCreationForm'
+      responses:
+        '201':
+          description: Group chat created successfully
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /groupchat/add:
+    post:
+      tags:
+        - GroupChat
+      summary: Add Participant
+      description: Adds a participant to the specified group chat.
+      operationId: addParticipant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupChatModificationForm'
+      responses:
+        '200':
+          description: Participant added successfully
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /groupchat/remove:
+    post:
+      tags:
+        - GroupChat
+      summary: Remove Participant
+      description: Removes a participant from the specified group chat.
+      operationId: removeParticipant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupChatModificationForm'
+      responses:
+        '200':
+          description: Participant removed successfully
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /groupchat/title:
+    patch:
+      tags:
+        - GroupChat
+      summary: Update Group Chat Title
+      description: Updates the title of the specified group chat.
+      operationId: updateGroupTitle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupChatTitleUpdateForm'
+      responses:
+        '200':
+          description: Group chat title updated successfully
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /message/{conversation_uuid}:
+    get:
+      tags:
+        - Messages
+      summary: Get Messages from Conversation
+      description: Retrieves messages from a specific conversation with optional pagination.
+      operationId: getMessagesFromConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversation_uuid
+          required: true
+          schema:
+            type: string
+          description: UUID of the conversation.
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Encoded timestamp for pagination (optional).
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Number of messages to retrieve (optional).
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationScreen'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Missing conversation UUID
+        '500':
+          description: Internal Server Error
+
+  /message/{conversation_uuid}/search:
+    get:
+      tags:
+        - Messages
+      summary: Search Messages
+      description: Searches for messages containing a specific keyword in a conversation.
+      operationId: searchMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversation_uuid
+          required: true
+          schema:
+            type: string
+          description: UUID of the conversation.
+        - in: query
+          name: keyword
+          required: true
+          schema:
+            type: string
+          description: Keyword to search for in messages.
+      responses:
+        '200':
+          description: List of matching messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageSearchScreen'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Missing conversation UUID or keyword
+        '500':
+          description: Internal Server Error
+
+  /message/status/{message_uuid}:
+    get:
+      tags:
+        - Messages
+      summary: Get Message Status
+      description: Retrieves the seen status of a specific message.
+      operationId: getMessageStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: message_uuid
+          required: true
+          schema:
+            type: string
+          description: UUID of the message.
+      responses:
+        '200':
+          description: Message seen status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageStatusIndicator'
+        '401':
+          description: Unauthorized
+        '422':
+          description: Missing message UUID
+        '500':
+          description: Internal Server Error
+
+  /profile:
+    get:
+      tags:
+        - UserProfile
+      summary: Get User Profile
+      description: Retrieves the profile information of the authenticated user.
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+    patch:
+      tags:
+        - UserProfile
+      summary: Update User Profile
+      description: Updates the profile information of the authenticated user.
+      operationId: updateUserProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileSettingScreen'
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /user/login:
+    post:
+      tags:
+        - User
+      summary: User Login
+      description: Handles the login process and returns a session token if the credentials are valid.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginForm'
+      responses:
+        '200':
+          description: Login successful, returns session token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutScreen'
+        '400':
+          description: Invalid request body
+        '401':
+          description: Unauthorized - Invalid credentials
+        '500':
+          description: Internal Server Error
+
+  /user/register:
+    post:
+      tags:
+        - User
+      summary: User Registration
+      description: Registers a new user with the provided credentials.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationForm'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request body
+        '500':
+          description: Internal Server Error
+
+  /user/logout:
+    post:
+      tags:
+        - User
+      summary: User Logout
+      description: Logs the user out by invalidating the current session token.
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Logout successful, returns invalidated token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutScreen'
+        '500':
+          description: Internal Server Error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ConversationRequestModel:
+      type: object
+      properties:
+        messageType:
+          type: string
+          enum: [send_message, delete_message, add_reaction, remove_reaction]
+        data:
+          type: object
+          additionalProperties: true
+          description: Data payload specific to the message type.
+
+    ConversationResponseModel:
+      type: object
+      properties:
+        messageType:
+          type: string
+          enum: [send_message, delete_message, add_reaction, remove_reaction, error]
+        data:
+          type: object
+          properties:
+            conversationUUID:
+              type: string
+            senderUUID:
+              type: string
+            content:
+              type: string
+              description: Message content (for `send_message` type).
+            messageUUID:
+              type: string
+              description: UUID of the message.
+            reaction:
+              type: string
+              description: Reaction type (for `add_reaction` or `remove_reaction`).
+            errorMessage:
+              type: string
+              description: Error message (for `error` type).
+
+    GroupChatCreationForm:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Title of the group chat
+          example: "Weekend Plans"
+        participants:
+          type: array
+          items:
+            type: string
+            example: "user123"
+          description: List of user UUIDs to be added as participants
+
+    GroupChatModificationForm:
+      type: object
+      properties:
+        groupChatUUID:
+          type: string
+          description: UUID of the group chat
+          example: "b5fc27b2-d9b2-4e71-95ec-c31dc82e82ad"
+        participantUUID:
+          type: string
+          description: UUID of the participant to be added or removed
+          example: "user123"
+
+    GroupChatTitleUpdateForm:
+      type: object
+      properties:
+        groupChatUUID:
+          type: string
+          description: UUID of the group chat
+          example: "b5fc27b2-d9b2-4e71-95ec-c31dc82e82ad"
+        newTitle:
+          type: string
+          description: New title of the group chat
+          example: "Friday Night Hangout"
+
+    ConversationScreen:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  messageUUID:
+                    type: string
+                  content:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  senderUUID:
+                    type: string
+        pagination:
+          type: object
+          properties:
+            cursor:
+              type: string
+              description: Cursor for pagination.
+            limit:
+              type: integer
+              description: Limit of records returned.
+
+    MessageSearchScreen:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  messageUUID:
+                    type: string
+                  content:
+                    type: string
+                  senderUUID:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+
+    MessageStatusIndicator:
+      type: object
+      properties:
+        seenStatus:
+          type: object
+          properties:
+            userUUID:
+              type: string
+              description: UUID of the user.
+            seenAt:
+              type: string
+              format: date-time
+              description: Timestamp when the message was seen.
+
+    UserProfile:
+      type: object
+      properties:
+        userUUID:
+          type: string
+          description: UUID of the user
+        firstName:
+          type: string
+          description: First name of the user
+        lastName:
+          type: string
+          description: Last name of the user
+        email:
+          type: string
+          description: Email of the user
+        avatar:
+          type: string
+          description: URL of the user's avatar
+
+    ProfileSettingScreen:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: First name of the user
+          example: John
+        lastName:
+          type: string
+          description: Last name of the user
+          example: Doe
+        email:
+          type: string
+          description: Email of the user
+          example: john.doe@example.com
+        avatar:
+          type: string
+          description: URL of the user's avatar
+          example: https://example.com/avatar.jpg
+
+    LoginForm:
+      type: object
+      properties:
+        email:
+          type: string
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          description: User's password
+          example: "securepassword"
+
+    RegistrationForm:
+      type: object
+      properties:
+        email:
+          type: string
+          description: User's email address
+          example: newuser@example.com
+        password:
+          type: string
+          description: User's password
+          example: "newpassword"
+        firstName:
+          type: string
+          description: User's first name
+          example: John
+        lastName:
+          type: string
+          description: User's last name
+          example: Doe
+
+    LogoutScreen:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The session token that was invalidated or newly issued
+
+tags:
+  - name: Contacts
+    description: Endpoints for managing user contacts including adding, removing, and blocking.
+  - name: Conversations
+    description: Endpoints for managing conversations and establishing WebSocket connections for real-time messaging.
+  - name: GroupChat
+    description: Endpoints for managing group chats, including creating, updating, and managing participants.
+  - name: Messages
+    description: Endpoints for managing messages, including retrieval, search, and status tracking.
+  - name: UserProfile
+    description: Endpoints for managing user profile, including retrieval and updating profile information.
+  - name: User
+    description: Endpoints for user management, including login, registration, and logout.
